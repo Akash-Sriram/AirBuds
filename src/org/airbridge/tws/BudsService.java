@@ -1,5 +1,6 @@
 package org.airbridge.tws;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -9,15 +10,23 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothSocket;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanRecord;
+import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.ParcelUuid;
 import android.util.Log;
 
 import java.io.InputStream;
@@ -42,6 +51,10 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     private static final UUID REALME_UUID = UUID.fromString("df21fe2c-2515-4fdb-8886-f12c4d67927c");
+    private static final ParcelUuid FAST_PAIR_SERVICE_UUID = ParcelUuid.fromString("0000FE2C-0000-1000-8000-00805F9B34FB");
+
+    private BluetoothLeScanner mBleScanner;
+    private boolean mIsScanning = false;
 
     private final IBinder mBinder = new LocalBinder();
     private final CopyOnWriteArrayList<BudsState.Listener> mListeners = new CopyOnWriteArrayList<>();
@@ -103,7 +116,24 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         super.onCreate();
         mShowNotification = getSharedPreferences("airbridge_prefs", Context.MODE_PRIVATE)
             .getBoolean("pref_show_notification", true);
+        String lastFw = getSharedPreferences("airbridge_prefs", Context.MODE_PRIVATE)
+            .getString("last_known_firmware", "1.1.0.104");
+        mState.firmwareVersion = lastFw;
+        String lastMac = getSharedPreferences("airbridge_prefs", Context.MODE_PRIVATE)
+            .getString("last_known_mac", "60:55:56:F9:98:FD");
+        mState.deviceAddress = lastMac;
         createNotificationChannel();
+
+        // Immediately promote to foreground to satisfy Android OS 5-second watchdog timer
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIF_ID, buildNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
+            } else {
+                startForeground(NOTIF_ID, buildNotification());
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error calling startForeground in onCreate", e);
+        }
 
         // Register system Bluetooth connect / disconnect receiver
         IntentFilter filter = new IntentFilter();
@@ -113,6 +143,9 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
         // Initiate connection to earbuds
         connectToEarbuds();
+
+        // Start background BLE scanner for case battery detection
+        startBleFastPairScanner();
     }
 
     @Override
@@ -662,6 +695,10 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     public void onFirmwareUpdate(String version) {
         Log.d(TAG, "onFirmwareUpdate: " + version);
         mState.firmwareVersion = version;
+        getSharedPreferences("airbridge_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putString("last_known_firmware", version)
+            .apply();
         notifyStateChanged();
     }
 
@@ -725,8 +762,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             String r = mState.batteryRight >= 0 ? mState.batteryRight + "%" : "--";
             String c = mState.batteryCase >= 0 ? mState.batteryCase + "%" : "--";
             contentText = "L: " + l + "  R: " + r + "  Case: " + c + " • " + anc;
+        } else if (mState.connState == BudsState.ConnState.CONNECTING) {
+            contentText = "Connecting...";
         } else {
-            contentText = mState.statusText;
+            if (mState.batteryCase >= 0) {
+                contentText = "Case: " + mState.batteryCase + "%" + (mState.chargingCase ? " ⚡" : "") + " • Disconnected";
+            } else {
+                contentText = mState.statusText != null && !mState.statusText.isEmpty() ? mState.statusText : "Disconnected";
+            }
         }
 
         Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID);
@@ -742,21 +785,15 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     private void updateNotification() {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (!mShowNotification || mState.connState != BudsState.ConnState.CONNECTED) {
-            try {
-                stopForeground(STOP_FOREGROUND_REMOVE);
-            } catch (Exception ignored) {}
-            if (nm != null) {
+        if (nm == null) return;
+        try {
+            if (mShowNotification) {
+                nm.notify(NOTIF_ID, buildNotification());
+            } else {
                 nm.cancel(NOTIF_ID);
             }
-        } else {
-            try {
-                startForeground(NOTIF_ID, buildNotification());
-            } catch (Exception e) {
-                if (nm != null) {
-                    nm.notify(NOTIF_ID, buildNotification());
-                }
-            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error updating notification", e);
         }
     }
 
@@ -789,9 +826,153 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
     };
 
+    // ------------------------------------------------------------------------
+    // BLE Fast Pair Case Battery Scanner
+    // ------------------------------------------------------------------------
+
+    private final ScanCallback mBleScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            if (result == null) return;
+            ScanRecord record = result.getScanRecord();
+            if (record == null) return;
+            byte[] serviceData = record.getServiceData(FAST_PAIR_SERVICE_UUID);
+            if (serviceData != null) {
+                parseFastPairBattery(serviceData);
+            }
+        }
+
+        @Override
+        public void onBatchScanResults(List<ScanResult> results) {
+            if (results != null) {
+                for (ScanResult r : results) {
+                    onScanResult(0, r);
+                }
+            }
+        }
+
+        @Override
+        public void onScanFailed(int errorCode) {
+            Log.w(TAG, "BLE Fast Pair scan failed with code: " + errorCode);
+            mIsScanning = false;
+        }
+    };
+
+    public void startBleFastPairScanner() {
+        if (mIsScanning) return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "BLUETOOTH_SCAN permission not granted; skipping BLE case scan");
+                return;
+            }
+        }
+        try {
+            BluetoothManager bm = getSystemService(BluetoothManager.class);
+            BluetoothAdapter adapter = bm != null ? bm.getAdapter() : null;
+            if (adapter == null || !adapter.isEnabled()) return;
+
+            mBleScanner = adapter.getBluetoothLeScanner();
+            if (mBleScanner == null) return;
+
+            List<ScanFilter> filters = new ArrayList<>();
+            filters.add(new ScanFilter.Builder()
+                .setServiceData(FAST_PAIR_SERVICE_UUID, null)
+                .build());
+
+            ScanSettings settings = new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .setReportDelay(0)
+                .build();
+
+            mBleScanner.startScan(filters, settings, mBleScanCallback);
+            mIsScanning = true;
+            Log.d(TAG, "BLE Fast Pair scanner started (service UUID 0xFE2C)");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start BLE Fast Pair scanner", e);
+        }
+    }
+
+    public void stopBleFastPairScanner() {
+        if (!mIsScanning || mBleScanner == null) return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                mIsScanning = false;
+                return;
+            }
+        }
+        try {
+            mBleScanner.stopScan(mBleScanCallback);
+        } catch (Exception ignored) {}
+        mIsScanning = false;
+        Log.d(TAG, "BLE Fast Pair scanner stopped");
+    }
+
+    private void parseFastPairBattery(byte[] serviceData) {
+        if (serviceData == null || serviceData.length < 4) return;
+        for (int i = 0; i < serviceData.length - 3; i++) {
+            int hdr = serviceData[i] & 0xFF;
+            int length = (hdr >> 4) & 0x0F;
+            int uiType = hdr & 0x0F;
+            if (length == 3 && (uiType == 0x03 || uiType == 0x04)) {
+                int leftRaw = serviceData[i + 1] & 0xFF;
+                int rightRaw = serviceData[i + 2] & 0xFF;
+                int caseRaw = serviceData[i + 3] & 0xFF;
+
+                boolean changed = false;
+                int lVal = leftRaw & 0x7F;
+                if (lVal <= 100) {
+                    if (mState.batteryLeft != lVal) {
+                        mState.batteryLeft = lVal;
+                        changed = true;
+                    }
+                    boolean chg = (leftRaw & 0x80) != 0;
+                    if (mState.chargingLeft != chg) {
+                        mState.chargingLeft = chg;
+                        changed = true;
+                    }
+                }
+
+                int rVal = rightRaw & 0x7F;
+                if (rVal <= 100) {
+                    if (mState.batteryRight != rVal) {
+                        mState.batteryRight = rVal;
+                        changed = true;
+                    }
+                    boolean chg = (rightRaw & 0x80) != 0;
+                    if (mState.chargingRight != chg) {
+                        mState.chargingRight = chg;
+                        changed = true;
+                    }
+                }
+
+                int cVal = caseRaw & 0x7F;
+                if (cVal <= 100) {
+                    if (mState.batteryCase != cVal) {
+                        mState.batteryCase = cVal;
+                        changed = true;
+                    }
+                    boolean chg = (caseRaw & 0x80) != 0;
+                    if (mState.chargingCase != chg) {
+                        mState.chargingCase = chg;
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    logPacket("BLE_ADV", "FastPair battery: L=" + mState.batteryLeft + "% (" + (mState.chargingLeft ? "⚡" : "") + ") "
+                        + "R=" + mState.batteryRight + "% (" + (mState.chargingRight ? "⚡" : "") + ") "
+                        + "Case=" + mState.batteryCase + "% (" + (mState.chargingCase ? "⚡" : "") + ")");
+                    notifyStateChanged();
+                }
+                break;
+            }
+        }
+    }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
+        stopBleFastPairScanner();
         try {
             unregisterReceiver(mBtReceiver);
         } catch (Exception ignored) {}

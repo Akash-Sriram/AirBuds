@@ -1099,9 +1099,10 @@
                         android:textSize="13sp" />
 
                     <TextView
+                        android:id="@+id/tv_info_app_version"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="v1.0.0 (Production)"
+                        android:text="v1.0.2 (Production)"
                         android:textColor="@color/text_main"
                         android:textSize="13sp" />
                 </LinearLayout>
