@@ -78,7 +78,8 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     public boolean hasBondedBuds() {
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        BluetoothManager bm = getSystemService(BluetoothManager.class);
+        BluetoothAdapter adapter = bm != null ? bm.getAdapter() : null;
         if (adapter == null) return false;
         try {
             Set<BluetoothDevice> bonded = adapter.getBondedDevices();
@@ -728,12 +729,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             contentText = mState.statusText;
         }
 
-        Notification.Builder builder;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder = new Notification.Builder(this, CHANNEL_ID);
-        } else {
-            builder = new Notification.Builder(this);
-        }
+        Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID);
 
         return builder
             .setContentTitle("Realme Buds Air 8")
@@ -748,11 +744,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (!mShowNotification || mState.connState != BudsState.ConnState.CONNECTED) {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    stopForeground(STOP_FOREGROUND_REMOVE);
-                } else {
-                    stopForeground(true);
-                }
+                stopForeground(STOP_FOREGROUND_REMOVE);
             } catch (Exception ignored) {}
             if (nm != null) {
                 nm.cancel(NOTIF_ID);
@@ -772,19 +764,28 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+            BluetoothDevice dev;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice.class);
+            } else {
+                dev = getDeviceExtraCompat(intent);
+            }
             if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
-                BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (dev != null && dev.getName() != null && dev.getName().toLowerCase().contains("air8")) {
                     logPacket("SYS", "Earbuds connected to Android system! Auto-connecting SPP...");
                     connectToEarbuds();
                 }
             } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-                BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (dev != null && dev.getName() != null && dev.getName().toLowerCase().contains("air8")) {
                     logPacket("SYS", "Earbuds disconnected from Android system.");
                     onDisconnected();
                 }
             }
+        }
+
+        @SuppressWarnings("deprecation")
+        private BluetoothDevice getDeviceExtraCompat(Intent intent) {
+            return intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
         }
     };
 

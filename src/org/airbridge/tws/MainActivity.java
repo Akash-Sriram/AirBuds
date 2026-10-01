@@ -225,6 +225,19 @@ public class MainActivity extends Activity implements BudsState.Listener {
         setupGestureOptions();
         setupListeners();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                () -> {
+                    if (mCurrentForm != FORM_MAIN) {
+                        showForm(FORM_MAIN);
+                    } else {
+                        finish();
+                    }
+                }
+            );
+        }
+
         checkPermissionsAndStartService();
     }
 
@@ -285,6 +298,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void onBackPressed() {
         if (mCurrentForm != FORM_MAIN) {
             showForm(FORM_MAIN);
@@ -306,6 +320,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void adjustWindowInsets() {
         boolean isNight = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
