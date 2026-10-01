@@ -1,0 +1,39 @@
+# Build outputs & temporary compiler files
+build/
+bin/
+obj/
+gen/
+*.dex
+*.class
+*.apk
+*.idsig
+*.ap_
+resources.zip
+
+# Keystore & security files
+*.keystore
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+
+# Reference research repositories (external cloned code)
+reference/BudsLink/
+reference/DevPods/
+reference/OPPO-Pods-Win/
+reference/OppoPods/
+reference/OppoPodsManager/
+reference/Pods-Protocol-Reverse-Engineering/
+reference/QuickBuds/
+
+# OS & Editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+*.iml
+.vscode/
+*.log

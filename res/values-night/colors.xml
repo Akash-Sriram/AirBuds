@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- System Default Dark Mode Colors (OLED Dark) -->
+    <color name="bg_dark">#101012</color>
+    <color name="card_bg">#18181C</color>
+    <color name="card_border">#26262E</color>
+    <color name="card_inner">#202026</color>
+    <color name="primary">#FFB300</color>
+    <color name="primary_light">#FFE082</color>
+    <color name="text_main">#F5F5F7</color>
+    <color name="text_dim">#8E8E93</color>
+    <color name="text_sub">#636366</color>
+    <color name="btn_selected">#FFB300</color>
+    <color name="btn_unselected">#222228</color>
+    <color name="bud_color">#E5E5EA</color>
+    <color name="bud_stem">#C7C7CC</color>
+    <color name="case_color">#AEAEB2</color>
+    <color name="case_accent">#FFB300</color>
+    <color name="success">#34C759</color>
+    <color name="info">#0A84FF</color>
+    <color name="offline">#48484A</color>
+    <color name="warning">#FF9F0A</color>
+</resources>

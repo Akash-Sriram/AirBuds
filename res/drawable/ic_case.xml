@@ -1,0 +1,39 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="56dp"
+    android:height="56dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- Charging Case Outer Shell (Pebble Squircle) -->
+    <path
+        android:fillColor="@color/case_color"
+        android:pathData="M16,14 C20,12 44,12 48,14 C55,16 57,24 57,32 C57,40 55,48 48,50 C44,52 20,52 16,50 C9,48 7,40 7,32 C7,24 9,16 16,14 Z" />
+
+    <!-- Clamshell Lid Top Highlight -->
+    <path
+        android:fillColor="@color/bud_color"
+        android:pathData="M16,14 C20,12 44,12 48,14 C55,16 57,22 57,28 L7,28 C7,22 9,16 16,14 Z" />
+
+    <!-- Horizontal Clamshell Lid Seam Line -->
+    <path
+        android:strokeColor="@color/bg_dark"
+        android:strokeWidth="1.2"
+        android:pathData="M7,28 L57,28" />
+
+    <!-- Thumb Opening Notch -->
+    <path
+        android:fillColor="@color/card_border"
+        android:pathData="M27,27 C27,29 37,29 37,27 Z" />
+
+    <!-- Center Status / Battery LED Indicator -->
+    <path
+        android:fillColor="@color/success"
+        android:pathData="M32,36 A2,2 0 1,0 32,40 A2,2 0 1,0 32,36 Z" />
+
+    <!-- Bottom USB-C Port Trim Accent -->
+    <path
+        android:strokeColor="@color/bg_dark"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:pathData="M29,51 L35,51" />
+</vector>

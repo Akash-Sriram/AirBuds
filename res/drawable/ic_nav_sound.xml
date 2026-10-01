@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Equalizer Audio Sliders / Frequency Bars -->
+    <path
+        android:strokeColor="#1677FF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M4,10 L4,20 M12,4 L12,20 M20,12 L20,20 M4,4 L4,6 M20,4 L20,8" />
+    <path
+        android:fillColor="#1677FF"
+        android:pathData="M4,8m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0" />
+    <path
+        android:fillColor="#1677FF"
+        android:pathData="M12,14m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0" />
+    <path
+        android:fillColor="#1677FF"
+        android:pathData="M20,10m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0" />
+</vector>

@@ -1,0 +1,46 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="56dp"
+    android:height="56dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- Earbud Stem -->
+    <path
+        android:fillColor="@color/bud_stem"
+        android:pathData="M37,24 L30,24 A4,4 0 0,0 26,28 L27,52 A3,3 0 0,0 30,55 L36,55 A3,3 0 0,0 39,52 L38,28 A4,4 0 0,0 37,24 Z" />
+
+    <!-- Stem Capacitive Touch Groove Indicator -->
+    <path
+        android:strokeColor="@color/primary"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M33,31 L33,39" />
+
+    <!-- Lower Charging Contacts -->
+    <path
+        android:fillColor="@color/primary"
+        android:pathData="M31,53 A1.2,1.2 0 1,0 31,55.4 A1.2,1.2 0 1,0 31,53 Z M37,53 A1.2,1.2 0 1,0 37,55.4 A1.2,1.2 0 1,0 37,53 Z" />
+
+    <!-- Driver Bulb Body -->
+    <path
+        android:fillColor="@color/bud_color"
+        android:pathData="M38,18 C38,11 28,9 21,13 C14,17 14,27 20,32 C26,36 35,33 38,27 Z" />
+
+    <!-- Silicone Ear-Tip (Pointing left into ear canal) -->
+    <path
+        android:fillColor="@color/card_border"
+        android:pathData="M21,15 C17,13 10,16 8,22 C7,27 12,32 18,31 C21,30 22,28 22,24 Z" />
+
+    <!-- Acoustic Vent / Mic Mesh -->
+    <path
+        android:fillColor="@color/bg_dark"
+        android:pathData="M33,14 A1.5,1.5 0 1,0 33,17 A1.5,1.5 0 1,0 33,14 Z" />
+
+    <!-- Earbud Side Indicator Label "R" -->
+    <path
+        android:strokeColor="@color/text_dim"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M31,44 L31,48 M31,44 L33,44 A1.5,1.5 0 0,1 33,46 L31,46 M32.5,46 L34,48" />
+</vector>
