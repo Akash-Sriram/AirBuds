@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.provider.Settings;
 import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.View;
@@ -115,6 +116,8 @@ public class MainActivity extends Activity implements BudsState.Listener {
     private Switch swHiRes;
     private Switch swGoldenSound;
     private Switch swShowNotification;
+    private Switch swSuppressGoogle;
+    private TextView tvSuppressGoogleDesc;
     private Button btnReconnect;
 
     private TextView tvHeroCodec;
@@ -281,8 +284,26 @@ public class MainActivity extends Activity implements BudsState.Listener {
     @Override
     protected void onResume() {
         super.onResume();
+        updateNotificationListenerUi();
         if (mBound && mService != null) {
             renderState(mService.getState());
+        }
+    }
+
+    private void updateNotificationListenerUi() {
+        if (swSuppressGoogle == null) return;
+        boolean granted = AirBudsNotificationListener.isPermissionGranted(this);
+        boolean prefEnabled = getSharedPreferences("airbridge_prefs", Context.MODE_PRIVATE)
+            .getBoolean("pref_suppress_google", true);
+        swSuppressGoogle.setChecked(granted && prefEnabled);
+        if (tvSuppressGoogleDesc != null) {
+            if (!granted) {
+                tvSuppressGoogleDesc.setText("Tap to grant Notification Access in Android Settings");
+                tvSuppressGoogleDesc.setTextColor(getColor(R.color.primary));
+            } else {
+                tvSuppressGoogleDesc.setText("Active • Automatically suppresses Google Fast Pair popups");
+                tvSuppressGoogleDesc.setTextColor(getColor(R.color.text_dim));
+            }
         }
     }
 
@@ -426,6 +447,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
         swWindNoise = findViewById(R.id.sw_wind_noise);
         swVocalEnhance = findViewById(R.id.sw_vocal_enhance);
         swShowNotification = findViewById(R.id.sw_show_notification);
+        swSuppressGoogle = findViewById(R.id.sw_suppress_google);
+        tvSuppressGoogleDesc = findViewById(R.id.tv_suppress_google_desc);
+        updateNotificationListenerUi();
         btnReconnect = findViewById(R.id.btn_reconnect);
         llFormMain = findViewById(R.id.ll_form_main);
         llFormSound = findViewById(R.id.ll_form_sound);
@@ -638,6 +662,27 @@ public class MainActivity extends Activity implements BudsState.Listener {
             swShowNotification.setOnCheckedChangeListener((btn, checked) -> {
                 if (btn.isPressed() && mService != null) {
                     mService.setShowNotification(checked);
+                }
+            });
+        }
+        if (swSuppressGoogle != null) {
+            swSuppressGoogle.setOnClickListener(v -> {
+                boolean granted = AirBudsNotificationListener.isPermissionGranted(this);
+                if (!granted) {
+                    swSuppressGoogle.setChecked(false);
+                    try {
+                        startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+                        Toast.makeText(this, "Enable 'AirBuds Notification Controller'", Toast.LENGTH_LONG).show();
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Open Settings -> Apps -> Special app access -> Notification access", Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    boolean enable = swSuppressGoogle.isChecked();
+                    getSharedPreferences("airbridge_prefs", Context.MODE_PRIVATE)
+                        .edit()
+                        .putBoolean("pref_suppress_google", enable)
+                        .apply();
+                    updateNotificationListenerUi();
                 }
             });
         }

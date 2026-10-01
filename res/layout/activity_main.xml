@@ -926,6 +926,50 @@
                         android:layout_height="wrap_content"
                         android:checked="true" />
                 </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/divider"
+                    android:layout_marginVertical="12dp" />
+
+                <!-- Suppress Google Fast Pair duplicates -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Hide Google Fast Pair Card"
+                            android:textColor="@color/text_main"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_suppress_google_desc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Suppresses duplicate popups from Google Play Services."
+                            android:textColor="@color/text_dim"
+                            android:textSize="11sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <Switch
+                        android:id="@+id/sw_suppress_google"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Earbud Fit Card -->

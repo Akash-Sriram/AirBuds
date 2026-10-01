@@ -20,4 +20,5 @@
     <color name="info">#0066CC</color>
     <color name="offline">#71717A</color>
     <color name="warning">#D97706</color>
+    <color name="divider">#E8EAED</color>
 </resources>
