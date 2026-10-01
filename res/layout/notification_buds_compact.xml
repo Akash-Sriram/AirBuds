@@ -32,7 +32,7 @@
             android:text="--"
             android:textStyle="bold"
             android:textSize="13sp"
-            android:textColor="?android:attr/textColorPrimary"
+            android:textColor="#FFFFFF"
             android:singleLine="true"
             android:maxLines="1"
             android:layout_marginStart="4dp" />
@@ -71,7 +71,7 @@
             android:text="--"
             android:textStyle="bold"
             android:textSize="13sp"
-            android:textColor="?android:attr/textColorPrimary"
+            android:textColor="#FFFFFF"
             android:singleLine="true"
             android:maxLines="1"
             android:layout_marginStart="4dp" />
@@ -110,7 +110,7 @@
             android:text="--"
             android:textStyle="bold"
             android:textSize="13sp"
-            android:textColor="?android:attr/textColorPrimary"
+            android:textColor="#FFFFFF"
             android:singleLine="true"
             android:maxLines="1"
             android:layout_marginStart="4dp" />

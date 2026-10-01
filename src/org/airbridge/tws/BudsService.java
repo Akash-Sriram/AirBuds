@@ -795,10 +795,13 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_buds_compact);
 
             views.setTextViewText(R.id.notif_tv_left, l);
+            views.setTextColor(R.id.notif_tv_left, Color.WHITE);
             views.setViewVisibility(R.id.notif_iv_charge_left, mState.chargingLeft ? View.VISIBLE : View.GONE);
             views.setTextViewText(R.id.notif_tv_case, c);
+            views.setTextColor(R.id.notif_tv_case, Color.WHITE);
             views.setViewVisibility(R.id.notif_iv_charge_case, mState.chargingCase ? View.VISIBLE : View.GONE);
             views.setTextViewText(R.id.notif_tv_right, r);
+            views.setTextColor(R.id.notif_tv_right, Color.WHITE);
             views.setViewVisibility(R.id.notif_iv_charge_right, mState.chargingRight ? View.VISIBLE : View.GONE);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
