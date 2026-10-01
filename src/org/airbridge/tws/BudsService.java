@@ -21,10 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -804,11 +801,6 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             .setContentIntent(pi)
             .setOngoing(!inCase);
 
-        Bitmap largeIcon = getLargeNotificationIcon();
-        if (largeIcon != null) {
-            builder.setLargeIcon(largeIcon);
-        }
-
         try {
             RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_buds_compact);
 
@@ -828,28 +820,6 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
 
         return builder.build();
-    }
-
-    private Bitmap mCachedLargeIcon = null;
-
-    private Bitmap getLargeNotificationIcon() {
-        if (mCachedLargeIcon != null && !mCachedLargeIcon.isRecycled()) {
-            return mCachedLargeIcon;
-        }
-        try {
-            Drawable d = getDrawable(R.drawable.ic_notif_large);
-            if (d == null) return null;
-            int size = (int) (64 * getResources().getDisplayMetrics().density);
-            Bitmap b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-            Canvas c = new Canvas(b);
-            d.setBounds(0, 0, size, size);
-            d.draw(c);
-            mCachedLargeIcon = b;
-            return b;
-        } catch (Exception e) {
-            Log.w(TAG, "Error generating large notification icon", e);
-            return null;
-        }
     }
 
     private final Runnable mDismissCaseNotificationRunnable = () -> {
