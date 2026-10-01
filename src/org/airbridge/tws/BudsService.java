@@ -772,12 +772,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
     }
 
-    private PendingIntent createAncPendingIntent(int mode, int requestCode) {
-        Intent intent = new Intent(this, BudsService.class);
-        intent.setAction("ACTION_SET_ANC");
-        intent.putExtra("EXTRA_ANC_MODE", mode);
-        return PendingIntent.getService(this, requestCode, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
+    private boolean isBudsInCase() {
+        if (mState.connState != BudsState.ConnState.CONNECTED) {
+            return true;
+        }
+        boolean bothCharging = mState.chargingLeft && mState.chargingRight;
+        boolean outOfEar = (mState.wearLeft != 3 && mState.wearLeft != 7 && mState.wearLeft != -1)
+            && (mState.wearRight != 3 && mState.wearRight != 7 && mState.wearRight != -1);
+        return bothCharging || outOfEar;
     }
 
     private Notification buildNotification() {
@@ -785,93 +787,32 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         PendingIntent pi = PendingIntent.getActivity(this, 0, tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
 
-        String contentText;
-        if (mState.connState == BudsState.ConnState.CONNECTED) {
-            String anc = (mState.ancMode == 8) ? "ANC On" : (mState.ancMode == 2 ? "Transparency" : "Off");
-            String l = mState.batteryLeft >= 0 ? mState.batteryLeft + "%" : "--";
-            String r = mState.batteryRight >= 0 ? mState.batteryRight + "%" : "--";
-            String c = mState.batteryCase >= 0 ? mState.batteryCase + "%" : "--";
-            contentText = "L: " + l + "  R: " + r + "  Case: " + c + " • " + anc;
-        } else if (mState.connState == BudsState.ConnState.CONNECTING) {
-            contentText = "Connecting...";
-        } else {
-            if (mState.batteryCase >= 0) {
-                contentText = "Case: " + mState.batteryCase + "%" + (mState.chargingCase ? " ⚡" : "") + " • Disconnected";
-            } else {
-                contentText = mState.statusText != null && !mState.statusText.isEmpty() ? mState.statusText : "Disconnected";
-            }
-        }
+        String l = mState.batteryLeft >= 0 ? mState.batteryLeft + "%" : "--";
+        String r = mState.batteryRight >= 0 ? mState.batteryRight + "%" : "--";
+        String c = mState.batteryCase >= 0 ? mState.batteryCase + "%" : "--";
+        String contentText = "L: " + l + "  Case: " + c + "  R: " + r;
+
+        boolean inCase = isBudsInCase();
 
         Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID);
         builder.setContentTitle("realme Buds Air 8")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_notif_earbuds)
             .setContentIntent(pi)
-            .setOngoing(mState.connState == BudsState.ConnState.CONNECTED);
+            .setOngoing(!inCase);
 
         try {
-            RemoteViews compactViews = new RemoteViews(getPackageName(), R.layout.notification_buds_compact);
-            RemoteViews expandedViews = new RemoteViews(getPackageName(), R.layout.notification_buds_expanded);
+            RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_buds_compact);
 
-            String lStr = mState.batteryLeft >= 0 ? mState.batteryLeft + "%" : "--";
-            String rStr = mState.batteryRight >= 0 ? mState.batteryRight + "%" : "--";
-            String cStr = mState.batteryCase >= 0 ? mState.batteryCase + "%" : "--";
-
-            // Compact view data
-            compactViews.setTextViewText(R.id.notif_tv_left, lStr);
-            compactViews.setViewVisibility(R.id.notif_iv_charge_left, mState.chargingLeft ? View.VISIBLE : View.GONE);
-            compactViews.setTextViewText(R.id.notif_tv_case, cStr);
-            compactViews.setViewVisibility(R.id.notif_iv_charge_case, mState.chargingCase ? View.VISIBLE : View.GONE);
-            compactViews.setTextViewText(R.id.notif_tv_right, rStr);
-            compactViews.setViewVisibility(R.id.notif_iv_charge_right, mState.chargingRight ? View.VISIBLE : View.GONE);
-
-            // Expanded view data
-            expandedViews.setTextViewText(R.id.notif_tv_left, lStr);
-            expandedViews.setViewVisibility(R.id.notif_iv_charge_left, mState.chargingLeft ? View.VISIBLE : View.GONE);
-            expandedViews.setTextViewText(R.id.notif_tv_case, cStr);
-            expandedViews.setViewVisibility(R.id.notif_iv_charge_case, mState.chargingCase ? View.VISIBLE : View.GONE);
-            expandedViews.setTextViewText(R.id.notif_tv_right, rStr);
-            expandedViews.setViewVisibility(R.id.notif_iv_charge_right, mState.chargingRight ? View.VISIBLE : View.GONE);
-
-            if (mState.connState == BudsState.ConnState.CONNECTED) {
-                expandedViews.setViewVisibility(R.id.notif_ll_anc_controls, View.VISIBLE);
-
-                expandedViews.setOnClickPendingIntent(R.id.notif_btn_anc, createAncPendingIntent(8, 201));
-                expandedViews.setOnClickPendingIntent(R.id.notif_btn_off, createAncPendingIntent(1, 202));
-                expandedViews.setOnClickPendingIntent(R.id.notif_btn_trans, createAncPendingIntent(2, 203));
-
-                int activeColor = Color.WHITE;
-                int inactiveColor = Color.parseColor("#555558");
-
-                if (mState.ancMode == 8) {
-                    expandedViews.setInt(R.id.notif_btn_anc, "setBackgroundResource", R.drawable.bg_notif_anc_active);
-                    expandedViews.setTextColor(R.id.notif_btn_anc, activeColor);
-                    expandedViews.setInt(R.id.notif_btn_off, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
-                    expandedViews.setTextColor(R.id.notif_btn_off, inactiveColor);
-                    expandedViews.setInt(R.id.notif_btn_trans, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
-                    expandedViews.setTextColor(R.id.notif_btn_trans, inactiveColor);
-                } else if (mState.ancMode == 2) {
-                    expandedViews.setInt(R.id.notif_btn_anc, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
-                    expandedViews.setTextColor(R.id.notif_btn_anc, inactiveColor);
-                    expandedViews.setInt(R.id.notif_btn_off, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
-                    expandedViews.setTextColor(R.id.notif_btn_off, inactiveColor);
-                    expandedViews.setInt(R.id.notif_btn_trans, "setBackgroundResource", R.drawable.bg_notif_anc_active);
-                    expandedViews.setTextColor(R.id.notif_btn_trans, activeColor);
-                } else {
-                    expandedViews.setInt(R.id.notif_btn_anc, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
-                    expandedViews.setTextColor(R.id.notif_btn_anc, inactiveColor);
-                    expandedViews.setInt(R.id.notif_btn_off, "setBackgroundResource", R.drawable.bg_notif_anc_active);
-                    expandedViews.setTextColor(R.id.notif_btn_off, activeColor);
-                    expandedViews.setInt(R.id.notif_btn_trans, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
-                    expandedViews.setTextColor(R.id.notif_btn_trans, inactiveColor);
-                }
-            } else {
-                expandedViews.setViewVisibility(R.id.notif_ll_anc_controls, View.GONE);
-            }
+            views.setTextViewText(R.id.notif_tv_left, l);
+            views.setViewVisibility(R.id.notif_iv_charge_left, mState.chargingLeft ? View.VISIBLE : View.GONE);
+            views.setTextViewText(R.id.notif_tv_case, c);
+            views.setViewVisibility(R.id.notif_iv_charge_case, mState.chargingCase ? View.VISIBLE : View.GONE);
+            views.setTextViewText(R.id.notif_tv_right, r);
+            views.setViewVisibility(R.id.notif_iv_charge_right, mState.chargingRight ? View.VISIBLE : View.GONE);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                builder.setCustomContentView(compactViews);
-                builder.setCustomBigContentView(expandedViews);
+                builder.setCustomContentView(views);
                 builder.setStyle(new Notification.DecoratedCustomViewStyle());
             }
         } catch (Exception e) {
@@ -882,7 +823,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     private final Runnable mDismissCaseNotificationRunnable = () -> {
-        if (mState.connState != BudsState.ConnState.CONNECTED) {
+        if (isBudsInCase()) {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm != null) {
                 nm.cancel(NOTIF_ID);
@@ -895,13 +836,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         if (nm == null) return;
         try {
             if (mShowNotification) {
-                if (mState.connState == BudsState.ConnState.CONNECTED) {
+                boolean inCase = isBudsInCase();
+                if (!inCase) {
                     mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
                     nm.notify(NOTIF_ID, buildNotification());
                 } else if (mState.batteryCase >= 0) {
                     nm.notify(NOTIF_ID, buildNotification());
                     mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
-                    mMainHandler.postDelayed(mDismissCaseNotificationRunnable, 6000);
+                    mMainHandler.postDelayed(mDismissCaseNotificationRunnable, 5000);
                 } else {
                     nm.cancel(NOTIF_ID);
                 }
