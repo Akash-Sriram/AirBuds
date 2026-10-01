@@ -798,7 +798,6 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         builder.setContentTitle("realme Buds Air 8")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_notif_earbuds)
-            .setColor(getColor(R.color.primary))
             .setContentIntent(pi)
             .setOngoing(!inCase);
 
