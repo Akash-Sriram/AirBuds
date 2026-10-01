@@ -6,32 +6,25 @@
     android:viewportHeight="24">
     <!-- Smartphone -->
     <path
-        android:strokeColor="#1677FF"
+        android:strokeColor="@color/primary"
         android:strokeWidth="1.8"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:pathData="M5,4 L11,4 A1,1 0 0,1 12,5 L12,17 A1,1 0 0,1 11,18 L5,18 A1,1 0 0,1 4,17 L4,5 A1,1 0 0,1 5,4 Z" />
     <path
-        android:fillColor="#1677FF"
+        android:fillColor="@color/primary"
         android:pathData="M8,15m-0.8,0a0.8,0.8 0 1,0 1.6,0a0.8,0.8 0 1,0 -1.6,0" />
 
     <!-- Laptop / Secondary Device -->
     <path
-        android:strokeColor="#1677FF"
+        android:strokeColor="@color/primary"
         android:strokeWidth="1.8"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:pathData="M14,8 L19,8 A1,1 0 0,1 20,9 L20,15 L14,15" />
     <path
-        android:strokeColor="#1677FF"
+        android:strokeColor="@color/primary"
         android:strokeWidth="1.8"
         android:strokeLineCap="round"
         android:pathData="M13,18 L21,18" />
-
-    <!-- Linking Bluetooth Dot / Wave -->
-    <path
-        android:strokeColor="#52C41A"
-        android:strokeWidth="1.8"
-        android:strokeLineCap="round"
-        android:pathData="M12,10 C13,10 13.5,11 13.5,12 C13.5,13 13,14 12,14" />
 </vector>

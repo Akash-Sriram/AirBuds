@@ -371,11 +371,14 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (root != null) {
             root.setOnApplyWindowInsetsListener((v, insets) -> {
                 int top = 0;
+                int bottom = 0;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    android.graphics.Insets insetsBars = insets.getInsets(WindowInsets.Type.statusBars() | WindowInsets.Type.displayCutout());
+                    android.graphics.Insets insetsBars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
                     top = insetsBars.top;
+                    bottom = insetsBars.bottom;
                 } else {
                     top = insets.getSystemWindowInsetTop();
+                    bottom = insets.getSystemWindowInsetBottom();
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                         DisplayCutout cutout = insets.getDisplayCutout();
                         if (cutout != null) {
@@ -386,7 +389,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 float density = getResources().getDisplayMetrics().density;
                 int padH = (int) (16 * density);
                 int padTop = top + (int) (10 * density);
-                int padB = (int) (24 * density);
+                int padB = bottom + (int) (24 * density);
                 v.setPadding(padH, padTop, padH, padB);
                 return insets;
             });
