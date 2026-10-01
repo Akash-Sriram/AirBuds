@@ -8,10 +8,10 @@
 
     <!-- Left Realme Earbud Silhouette -->
     <group
-        android:scaleX="0.95"
-        android:scaleY="0.95"
-        android:translateX="-3"
-        android:translateY="23.5">
+        android:scaleX="1.0"
+        android:scaleY="1.0"
+        android:translateX="-5"
+        android:translateY="21.0">
 
         <!-- Stem Body -->
         <path
@@ -31,10 +31,10 @@
 
     <!-- Right Realme Earbud Silhouette -->
     <group
-        android:scaleX="0.95"
-        android:scaleY="0.95"
-        android:translateX="50"
-        android:translateY="23.5">
+        android:scaleX="1.0"
+        android:scaleY="1.0"
+        android:translateX="49"
+        android:translateY="21.0">
 
         <!-- Stem Body -->
         <path

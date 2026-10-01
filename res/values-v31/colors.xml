@@ -4,7 +4,7 @@
     <color name="primary">@android:color/system_accent1_600</color>
     <color name="primary_light">@android:color/system_accent1_100</color>
     <color name="btn_selected">@android:color/system_accent1_600</color>
-    <color name="ic_launcher_bg">#F2F4F7</color>
-    <color name="ic_launcher_ring">@android:color/system_neutral1_100</color>
-    <color name="ic_launcher_amber_glow">#1AEC5B13</color>
+    <color name="ic_launcher_bg">#0D1117</color>
+    <color name="ic_launcher_ring">#1F2937</color>
+    <color name="ic_launcher_amber_glow">#1AFF9500</color>
 </resources>
