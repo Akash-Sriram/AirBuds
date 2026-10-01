@@ -105,6 +105,4 @@ $APKSIGNER sign --ks "$KEYSTORE" \
     --out AirBuds.apk \
     build/aligned.apk
 
-cp -f AirBuds.apk AirBridge.apk
-
-echo "Successfully built AirBuds.apk (also synced to AirBridge.apk)!"
+echo "Successfully built AirBuds.apk!"
