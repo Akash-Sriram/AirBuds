@@ -1,15 +1,50 @@
 #!/bin/bash
 set -e
 
-SDK_PLATFORM="${ANDROID_HOME:-$HOME/android-sdk}/platforms/android-35/android.jar"
-if [ ! -f "$SDK_PLATFORM" ]; then
-    SDK_PLATFORM="/usr/lib/android-sdk/platforms/android-35/android.jar"
+# Detect Android SDK Platform android.jar
+if [ -z "$SDK_PLATFORM" ] || [ ! -f "$SDK_PLATFORM" ]; then
+    for candidate in \
+        "${ANDROID_HOME}/platforms/android-35/android.jar" \
+        "${ANDROID_SDK_ROOT}/platforms/android-35/android.jar" \
+        "$HOME/android-sdk/platforms/android-35/android.jar" \
+        "/usr/lib/android-sdk/platforms/android-35/android.jar" \
+        ${ANDROID_HOME}/platforms/android-*/android.jar \
+        /usr/lib/android-sdk/platforms/android-*/android.jar; do
+        if [ -f "$candidate" ]; then
+            SDK_PLATFORM="$candidate"
+            break
+        fi
+    done
 fi
 
-BUILD_TOOLS="${ANDROID_HOME:-$HOME/android-sdk}/build-tools/35.0.0"
-if [ ! -d "$BUILD_TOOLS" ]; then
-    BUILD_TOOLS="/usr/lib/android-sdk/build-tools/35.0.0"
+# Detect Android SDK Build-Tools
+if [ -z "$BUILD_TOOLS" ] || [ ! -d "$BUILD_TOOLS" ]; then
+    for candidate in \
+        "${ANDROID_HOME}/build-tools/35.0.0" \
+        "${ANDROID_SDK_ROOT}/build-tools/35.0.0" \
+        "$HOME/android-sdk/build-tools/35.0.0" \
+        "/usr/lib/android-sdk/build-tools/35.0.0" \
+        ${ANDROID_HOME}/build-tools/* \
+        /usr/lib/android-sdk/build-tools/*; do
+        if [ -d "$candidate" ] && [ -f "$candidate/aapt2" ]; then
+            BUILD_TOOLS="$candidate"
+            break
+        fi
+    done
 fi
+
+if [ ! -f "$SDK_PLATFORM" ]; then
+    echo "Error: android.jar not found! Please install android-35 platform."
+    exit 1
+fi
+
+if [ ! -d "$BUILD_TOOLS" ]; then
+    echo "Error: Android build-tools not found! Please install build-tools (e.g., 35.0.0)."
+    exit 1
+fi
+
+echo "Using SDK Platform: $SDK_PLATFORM"
+echo "Using Build Tools:  $BUILD_TOOLS"
 
 AAPT2="$BUILD_TOOLS/aapt2"
 D8="$BUILD_TOOLS/d8"
@@ -49,17 +84,24 @@ echo "Step 6: Running zipalign..."
 $ZIPALIGN -f -p 4 build/unaligned.apk build/aligned.apk
 
 echo "Step 7: Signing APK with apksigner..."
-KEYSTORE="/tmp/debug.keystore"
+KEYSTORE="${KEYSTORE_FILE:-keystore/airbuds.jks}"
+KEY_ALIAS="${KEY_ALIAS:-airbuds}"
+KEY_PASS="${KEY_PASSWORD:-pass:airbuds2026}"
+STORE_PASS="${STORE_PASSWORD:-pass:airbuds2026}"
+
 if [ ! -f "$KEYSTORE" ]; then
+    echo "Generating tailored keystore at $KEYSTORE..."
+    mkdir -p "$(dirname "$KEYSTORE")"
     keytool -genkeypair -v -keystore "$KEYSTORE" \
-        -alias androiddebugkey -storepass android -keypass android \
+        -alias "$KEY_ALIAS" -storepass airbuds2026 -keypass airbuds2026 \
         -keyalg RSA -keysize 2048 -validity 10000 \
-        -dname "CN=Android Debug,O=Android,C=US"
+        -dname "CN=AirBuds, OU=Akash-Sriram, O=AirBuds, C=IN"
 fi
 
 $APKSIGNER sign --ks "$KEYSTORE" \
-    --ks-pass pass:android \
-    --key-pass pass:android \
+    --ks-key-alias "$KEY_ALIAS" \
+    --ks-pass "$STORE_PASS" \
+    --key-pass "$KEY_PASS" \
     --out AirBuds.apk \
     build/aligned.apk
 

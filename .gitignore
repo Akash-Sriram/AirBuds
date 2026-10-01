@@ -17,6 +17,7 @@ resources.zip
 *.p12
 *.key
 *.pem
+!keystore/airbuds.jks
 
 # Reference research repositories (external cloned code)
 reference/BudsLink/
