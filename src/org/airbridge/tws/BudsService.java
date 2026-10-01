@@ -803,6 +803,8 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 builder.setCustomContentView(views);
+                builder.setCustomBigContentView(views);
+                builder.setStyle(new Notification.DecoratedCustomViewStyle());
             }
         } catch (Exception e) {
             Log.w(TAG, "Error applying custom RemoteViews to notification", e);
