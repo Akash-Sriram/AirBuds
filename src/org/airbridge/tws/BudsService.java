@@ -772,16 +772,6 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
     }
 
-    private boolean isBudsInCase() {
-        if (mState.connState != BudsState.ConnState.CONNECTED) {
-            return true;
-        }
-        boolean bothCharging = mState.chargingLeft && mState.chargingRight;
-        boolean outOfEar = (mState.wearLeft != 3 && mState.wearLeft != 7 && mState.wearLeft != -1)
-            && (mState.wearRight != 3 && mState.wearRight != 7 && mState.wearRight != -1);
-        return bothCharging || outOfEar;
-    }
-
     private Notification buildNotification() {
         Intent tapIntent = new Intent(this, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(this, 0, tapIntent,
@@ -792,14 +782,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         String c = mState.batteryCase >= 0 ? mState.batteryCase + "%" : "--";
         String contentText = "L: " + l + "  Case: " + c + "  R: " + r;
 
-        boolean inCase = isBudsInCase();
+        boolean isConnected = (mState.connState == BudsState.ConnState.CONNECTED);
 
         Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID);
         builder.setContentTitle("realme Buds Air 8")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_notif_earbuds)
             .setContentIntent(pi)
-            .setOngoing(!inCase);
+            .setOngoing(isConnected);
 
         try {
             RemoteViews views = new RemoteViews(getPackageName(), R.layout.notification_buds_compact);
@@ -813,7 +803,6 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 builder.setCustomContentView(views);
-                builder.setStyle(new Notification.DecoratedCustomViewStyle());
             }
         } catch (Exception e) {
             Log.w(TAG, "Error applying custom RemoteViews to notification", e);
@@ -823,7 +812,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     private final Runnable mDismissCaseNotificationRunnable = () -> {
-        if (isBudsInCase()) {
+        if (mState.connState != BudsState.ConnState.CONNECTED) {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm != null) {
                 nm.cancel(NOTIF_ID);
@@ -836,8 +825,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         if (nm == null) return;
         try {
             if (mShowNotification) {
-                boolean inCase = isBudsInCase();
-                if (!inCase) {
+                if (mState.connState == BudsState.ConnState.CONNECTED) {
                     mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
                     nm.notify(NOTIF_ID, buildNotification());
                 } else if (mState.batteryCase >= 0) {
