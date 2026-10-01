@@ -134,6 +134,9 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             } else {
                 startForeground(NOTIF_ID, buildNotification());
             }
+            if (mState.connState != BudsState.ConnState.CONNECTED) {
+                stopForeground(STOP_FOREGROUND_REMOVE);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error calling startForeground in onCreate", e);
         }
@@ -373,6 +376,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         disconnectInternal();
         mState.connState = BudsState.ConnState.DISCONNECTED;
         mState.statusText = "○ Disconnected";
+        mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } catch (Exception ignored) {}
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) {
+            nm.cancel(NOTIF_ID);
+        }
         notifyStateChanged();
     }
 
@@ -794,9 +805,9 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID);
         builder.setContentTitle("realme Buds Air 8")
             .setContentText(contentText)
-            .setSmallIcon(R.drawable.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notif_earbuds)
             .setContentIntent(pi)
-            .setOngoing(true);
+            .setOngoing(mState.connState == BudsState.ConnState.CONNECTED);
 
         try {
             RemoteViews compactViews = new RemoteViews(getPackageName(), R.layout.notification_buds_compact);
@@ -830,7 +841,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
                 expandedViews.setOnClickPendingIntent(R.id.notif_btn_trans, createAncPendingIntent(2, 203));
 
                 int activeColor = Color.WHITE;
-                int inactiveColor = Color.parseColor("#A0A0A0");
+                int inactiveColor = Color.parseColor("#555558");
 
                 if (mState.ancMode == 8) {
                     expandedViews.setInt(R.id.notif_btn_anc, "setBackgroundResource", R.drawable.bg_notif_anc_active);
@@ -870,12 +881,30 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         return builder.build();
     }
 
+    private final Runnable mDismissCaseNotificationRunnable = () -> {
+        if (mState.connState != BudsState.ConnState.CONNECTED) {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(NOTIF_ID);
+            }
+        }
+    };
+
     private void updateNotification() {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         try {
             if (mShowNotification) {
-                nm.notify(NOTIF_ID, buildNotification());
+                if (mState.connState == BudsState.ConnState.CONNECTED) {
+                    mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
+                    nm.notify(NOTIF_ID, buildNotification());
+                } else if (mState.batteryCase >= 0) {
+                    nm.notify(NOTIF_ID, buildNotification());
+                    mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
+                    mMainHandler.postDelayed(mDismissCaseNotificationRunnable, 6000);
+                } else {
+                    nm.cancel(NOTIF_ID);
+                }
             } else {
                 nm.cancel(NOTIF_ID);
             }
