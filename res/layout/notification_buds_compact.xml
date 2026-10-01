@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="4dp"
+    android:paddingHorizontal="2dp">
+
+    <!-- Left Bud -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/bg_notif_pill"
+        android:paddingVertical="6dp"
+        android:paddingHorizontal="6dp"
+        android:layout_marginEnd="3dp">
+
+        <ImageView
+            android:id="@+id/notif_iv_left"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_earbud_left" />
+
+        <TextView
+            android:id="@+id/notif_tv_left"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:textColor="#E0E0E0"
+            android:layout_marginStart="5dp" />
+
+        <ImageView
+            android:id="@+id/notif_iv_charge_left"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
+            android:src="@drawable/ic_charging_bolt"
+            android:visibility="gone"
+            android:layout_marginStart="2dp" />
+    </LinearLayout>
+
+    <!-- Case -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/bg_notif_pill"
+        android:paddingVertical="6dp"
+        android:paddingHorizontal="6dp"
+        android:layout_marginHorizontal="2dp">
+
+        <ImageView
+            android:id="@+id/notif_iv_case"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_case" />
+
+        <TextView
+            android:id="@+id/notif_tv_case"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:textColor="#E0E0E0"
+            android:layout_marginStart="5dp" />
+
+        <ImageView
+            android:id="@+id/notif_iv_charge_case"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
+            android:src="@drawable/ic_charging_bolt"
+            android:visibility="gone"
+            android:layout_marginStart="2dp" />
+    </LinearLayout>
+
+    <!-- Right Bud -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/bg_notif_pill"
+        android:paddingVertical="6dp"
+        android:paddingHorizontal="6dp"
+        android:layout_marginStart="3dp">
+
+        <ImageView
+            android:id="@+id/notif_iv_right"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_earbud_right" />
+
+        <TextView
+            android:id="@+id/notif_tv_right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="--"
+            android:textStyle="bold"
+            android:textSize="12sp"
+            android:textColor="#E0E0E0"
+            android:layout_marginStart="5dp" />
+
+        <ImageView
+            android:id="@+id/notif_iv_charge_right"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
+            android:src="@drawable/ic_charging_bolt"
+            android:visibility="gone"
+            android:layout_marginStart="2dp" />
+    </LinearLayout>
+</LinearLayout>

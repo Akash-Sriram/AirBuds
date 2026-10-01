@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -28,6 +29,8 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.ParcelUuid;
 import android.util.Log;
+import android.view.View;
+import android.widget.RemoteViews;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -150,8 +153,16 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && "ACTION_RECONNECT".equals(intent.getAction())) {
-            reconnect();
+        if (intent != null) {
+            String action = intent.getAction();
+            if ("ACTION_RECONNECT".equals(action)) {
+                reconnect();
+            } else if ("ACTION_SET_ANC".equals(action)) {
+                int mode = intent.getIntExtra("EXTRA_ANC_MODE", -1);
+                if (mode != -1) {
+                    setAncMode(mode);
+                }
+            }
         }
         return START_STICKY;
     }
@@ -750,6 +761,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
     }
 
+    private PendingIntent createAncPendingIntent(int mode, int requestCode) {
+        Intent intent = new Intent(this, BudsService.class);
+        intent.setAction("ACTION_SET_ANC");
+        intent.putExtra("EXTRA_ANC_MODE", mode);
+        return PendingIntent.getService(this, requestCode, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0));
+    }
+
     private Notification buildNotification() {
         Intent tapIntent = new Intent(this, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(this, 0, tapIntent,
@@ -757,7 +776,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
         String contentText;
         if (mState.connState == BudsState.ConnState.CONNECTED) {
-            String anc = (mState.ancMode == 8) ? "ANC On" : (mState.ancMode == 2 ? "Transparency" : "Normal");
+            String anc = (mState.ancMode == 8) ? "ANC On" : (mState.ancMode == 2 ? "Transparency" : "Off");
             String l = mState.batteryLeft >= 0 ? mState.batteryLeft + "%" : "--";
             String r = mState.batteryRight >= 0 ? mState.batteryRight + "%" : "--";
             String c = mState.batteryCase >= 0 ? mState.batteryCase + "%" : "--";
@@ -773,14 +792,82 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
 
         Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID);
-
-        return builder
-            .setContentTitle("Realme Buds Air 8")
+        builder.setContentTitle("realme Buds Air 8")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentIntent(pi)
-            .setOngoing(true)
-            .build();
+            .setOngoing(true);
+
+        try {
+            RemoteViews compactViews = new RemoteViews(getPackageName(), R.layout.notification_buds_compact);
+            RemoteViews expandedViews = new RemoteViews(getPackageName(), R.layout.notification_buds_expanded);
+
+            String lStr = mState.batteryLeft >= 0 ? mState.batteryLeft + "%" : "--";
+            String rStr = mState.batteryRight >= 0 ? mState.batteryRight + "%" : "--";
+            String cStr = mState.batteryCase >= 0 ? mState.batteryCase + "%" : "--";
+
+            // Compact view data
+            compactViews.setTextViewText(R.id.notif_tv_left, lStr);
+            compactViews.setViewVisibility(R.id.notif_iv_charge_left, mState.chargingLeft ? View.VISIBLE : View.GONE);
+            compactViews.setTextViewText(R.id.notif_tv_case, cStr);
+            compactViews.setViewVisibility(R.id.notif_iv_charge_case, mState.chargingCase ? View.VISIBLE : View.GONE);
+            compactViews.setTextViewText(R.id.notif_tv_right, rStr);
+            compactViews.setViewVisibility(R.id.notif_iv_charge_right, mState.chargingRight ? View.VISIBLE : View.GONE);
+
+            // Expanded view data
+            expandedViews.setTextViewText(R.id.notif_tv_left, lStr);
+            expandedViews.setViewVisibility(R.id.notif_iv_charge_left, mState.chargingLeft ? View.VISIBLE : View.GONE);
+            expandedViews.setTextViewText(R.id.notif_tv_case, cStr);
+            expandedViews.setViewVisibility(R.id.notif_iv_charge_case, mState.chargingCase ? View.VISIBLE : View.GONE);
+            expandedViews.setTextViewText(R.id.notif_tv_right, rStr);
+            expandedViews.setViewVisibility(R.id.notif_iv_charge_right, mState.chargingRight ? View.VISIBLE : View.GONE);
+
+            if (mState.connState == BudsState.ConnState.CONNECTED) {
+                expandedViews.setViewVisibility(R.id.notif_ll_anc_controls, View.VISIBLE);
+
+                expandedViews.setOnClickPendingIntent(R.id.notif_btn_anc, createAncPendingIntent(8, 201));
+                expandedViews.setOnClickPendingIntent(R.id.notif_btn_off, createAncPendingIntent(1, 202));
+                expandedViews.setOnClickPendingIntent(R.id.notif_btn_trans, createAncPendingIntent(2, 203));
+
+                int activeColor = Color.WHITE;
+                int inactiveColor = Color.parseColor("#A0A0A0");
+
+                if (mState.ancMode == 8) {
+                    expandedViews.setInt(R.id.notif_btn_anc, "setBackgroundResource", R.drawable.bg_notif_anc_active);
+                    expandedViews.setTextColor(R.id.notif_btn_anc, activeColor);
+                    expandedViews.setInt(R.id.notif_btn_off, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
+                    expandedViews.setTextColor(R.id.notif_btn_off, inactiveColor);
+                    expandedViews.setInt(R.id.notif_btn_trans, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
+                    expandedViews.setTextColor(R.id.notif_btn_trans, inactiveColor);
+                } else if (mState.ancMode == 2) {
+                    expandedViews.setInt(R.id.notif_btn_anc, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
+                    expandedViews.setTextColor(R.id.notif_btn_anc, inactiveColor);
+                    expandedViews.setInt(R.id.notif_btn_off, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
+                    expandedViews.setTextColor(R.id.notif_btn_off, inactiveColor);
+                    expandedViews.setInt(R.id.notif_btn_trans, "setBackgroundResource", R.drawable.bg_notif_anc_active);
+                    expandedViews.setTextColor(R.id.notif_btn_trans, activeColor);
+                } else {
+                    expandedViews.setInt(R.id.notif_btn_anc, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
+                    expandedViews.setTextColor(R.id.notif_btn_anc, inactiveColor);
+                    expandedViews.setInt(R.id.notif_btn_off, "setBackgroundResource", R.drawable.bg_notif_anc_active);
+                    expandedViews.setTextColor(R.id.notif_btn_off, activeColor);
+                    expandedViews.setInt(R.id.notif_btn_trans, "setBackgroundResource", R.drawable.bg_notif_anc_inactive);
+                    expandedViews.setTextColor(R.id.notif_btn_trans, inactiveColor);
+                }
+            } else {
+                expandedViews.setViewVisibility(R.id.notif_ll_anc_controls, View.GONE);
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                builder.setCustomContentView(compactViews);
+                builder.setCustomBigContentView(expandedViews);
+                builder.setStyle(new Notification.DecoratedCustomViewStyle());
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error applying custom RemoteViews to notification", e);
+        }
+
+        return builder.build();
     }
 
     private void updateNotification() {
