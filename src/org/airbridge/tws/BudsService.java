@@ -78,6 +78,9 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
     }
 
+    private boolean mIsForeground = false;
+    private long mLastNotifUpdate = 0;
+    private final Runnable mThrottledNotifRunnable = this::performUpdateNotification;
     private boolean mShowNotification = true;
 
     public boolean isShowNotification() {
@@ -127,20 +130,6 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         mState.deviceAddress = lastMac;
         createNotificationChannel();
 
-        // Immediately promote to foreground to satisfy Android OS 5-second watchdog timer
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIF_ID, buildNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
-            } else {
-                startForeground(NOTIF_ID, buildNotification());
-            }
-            if (mState.connState != BudsState.ConnState.CONNECTED) {
-                stopForeground(STOP_FOREGROUND_REMOVE);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error calling startForeground in onCreate", e);
-        }
-
         // Register system Bluetooth connect / disconnect receiver
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
@@ -156,6 +145,9 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (mShowNotification && mState.connState == BudsState.ConnState.CONNECTED && !mIsForeground) {
+            performUpdateNotification();
+        }
         if (intent != null) {
             String action = intent.getAction();
             if ("ACTION_RECONNECT".equals(action)) {
@@ -376,10 +368,16 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         disconnectInternal();
         mState.connState = BudsState.ConnState.DISCONNECTED;
         mState.statusText = "○ Disconnected";
-        mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
-        try {
-            stopForeground(STOP_FOREGROUND_REMOVE);
-        } catch (Exception ignored) {}
+        if (mIsForeground) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE);
+                } else {
+                    stopForeground(true);
+                }
+            } catch (Exception ignored) {}
+            mIsForeground = false;
+        }
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) {
             nm.cancel(NOTIF_ID);
@@ -817,35 +815,48 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         return builder.build();
     }
 
-    private final Runnable mDismissCaseNotificationRunnable = () -> {
-        if (mState.connState != BudsState.ConnState.CONNECTED) {
-            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (nm != null) {
-                nm.cancel(NOTIF_ID);
-            }
-        }
-    };
-
-    private void updateNotification() {
+    private void performUpdateNotification() {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         try {
-            if (mShowNotification) {
-                if (mState.connState == BudsState.ConnState.CONNECTED) {
-                    mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
+            if (mShowNotification && mState.connState == BudsState.ConnState.CONNECTED) {
+                if (!mIsForeground) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        startForeground(NOTIF_ID, buildNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
+                    } else {
+                        startForeground(NOTIF_ID, buildNotification());
+                    }
+                    mIsForeground = true;
+                } else {
                     nm.notify(NOTIF_ID, buildNotification());
-                } else if (mState.batteryCase >= 0) {
-                    nm.notify(NOTIF_ID, buildNotification());
-                    mMainHandler.removeCallbacks(mDismissCaseNotificationRunnable);
-                    mMainHandler.postDelayed(mDismissCaseNotificationRunnable, 5000);
+                }
+            } else {
+                if (mIsForeground) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        stopForeground(STOP_FOREGROUND_REMOVE);
+                    } else {
+                        stopForeground(true);
+                    }
+                    mIsForeground = false;
                 } else {
                     nm.cancel(NOTIF_ID);
                 }
-            } else {
-                nm.cancel(NOTIF_ID);
             }
         } catch (Exception e) {
             Log.w(TAG, "Error updating notification", e);
+        }
+    }
+
+    private void updateNotification() {
+        long now = System.currentTimeMillis();
+        long diff = now - mLastNotifUpdate;
+        if (diff >= 500) {
+            mLastNotifUpdate = now;
+            mMainHandler.removeCallbacks(mThrottledNotifRunnable);
+            performUpdateNotification();
+        } else {
+            mMainHandler.removeCallbacks(mThrottledNotifRunnable);
+            mMainHandler.postDelayed(mThrottledNotifRunnable, 500 - diff);
         }
     }
 
@@ -1024,6 +1035,17 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mMainHandler.removeCallbacks(mThrottledNotifRunnable);
+        if (mIsForeground) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE);
+                } else {
+                    stopForeground(true);
+                }
+                mIsForeground = false;
+            } catch (Exception ignored) {}
+        }
         stopBleFastPairScanner();
         try {
             unregisterReceiver(mBtReceiver);

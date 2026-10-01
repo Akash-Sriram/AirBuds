@@ -273,11 +273,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
     private void startAndBindService() {
         Intent intent = new Intent(this, BudsService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent);
-        } else {
-            startService(intent);
-        }
+        startService(intent);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 

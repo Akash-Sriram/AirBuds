@@ -59,13 +59,8 @@ public class AncTileService extends TileService implements BudsState.Listener {
     public void onClick() {
         super.onClick();
         if (!mBound || mService == null) {
-            // Start service if not already running
+            // Start and bind service if not already running
             Intent intent = new Intent(this, BudsService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent);
-            } else {
-                startService(intent);
-            }
             bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
             return;
         }

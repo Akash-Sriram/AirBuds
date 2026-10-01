@@ -23,4 +23,7 @@
     <color name="notif_pill_bg">#22262E</color>
     <color name="notif_pill_border">#383F4C</color>
     <color name="notif_pill_text">#FFFFFF</color>
+    <color name="ic_launcher_bg">#0D1117</color>
+    <color name="ic_launcher_ring">#1F2937</color>
+    <color name="ic_launcher_amber_glow">#1AFF9500</color>
 </resources>
