@@ -20,4 +20,7 @@
     <color name="info">#0A84FF</color>
     <color name="offline">#48484A</color>
     <color name="warning">#FF9F0A</color>
+    <color name="notif_pill_bg">#22262E</color>
+    <color name="notif_pill_border">#383F4C</color>
+    <color name="notif_pill_text">#FFFFFF</color>
 </resources>

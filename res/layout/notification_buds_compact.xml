@@ -32,7 +32,7 @@
             android:text="--"
             android:textStyle="bold"
             android:textSize="13sp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/notif_pill_text"
             android:singleLine="true"
             android:maxLines="1"
             android:layout_marginStart="4dp" />
@@ -71,7 +71,7 @@
             android:text="--"
             android:textStyle="bold"
             android:textSize="13sp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/notif_pill_text"
             android:singleLine="true"
             android:maxLines="1"
             android:layout_marginStart="4dp" />
@@ -110,7 +110,7 @@
             android:text="--"
             android:textStyle="bold"
             android:textSize="13sp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/notif_pill_text"
             android:singleLine="true"
             android:maxLines="1"
             android:layout_marginStart="4dp" />

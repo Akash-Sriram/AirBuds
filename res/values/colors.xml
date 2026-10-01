@@ -21,4 +21,7 @@
     <color name="offline">#71717A</color>
     <color name="warning">#D97706</color>
     <color name="divider">#E8EAED</color>
+    <color name="notif_pill_bg">#E2E4E9</color>
+    <color name="notif_pill_border">#CFD2D8</color>
+    <color name="notif_pill_text">#1D1D1F</color>
 </resources>
