@@ -529,8 +529,9 @@
                         </LinearLayout>
 
                         <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                             android:id="@+id/sw_wind_noise"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -582,8 +583,9 @@
                         </LinearLayout>
 
                         <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                             android:id="@+id/sw_vocal_enhance"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -628,8 +630,9 @@
                 </LinearLayout>
 
                 <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                     android:id="@+id/sw_in_ear"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -671,8 +674,9 @@
                 </LinearLayout>
 
                 <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                     android:id="@+id/sw_game_mode"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -714,8 +718,9 @@
                 </LinearLayout>
 
                 <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                     android:id="@+id/sw_auto_answer"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -931,8 +936,9 @@
                     </LinearLayout>
 
                     <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                         android:id="@+id/sw_show_notification"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -977,8 +983,9 @@
                     </LinearLayout>
 
                     <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                         android:id="@+id/sw_suppress_google"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -1557,8 +1564,9 @@
                     </LinearLayout>
 
                     <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                         android:id="@+id/sw_spatial_audio"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -1619,8 +1627,9 @@
                         </LinearLayout>
 
                         <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                             android:id="@+id/sw_dynamic_bass"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
@@ -1865,8 +1874,9 @@
                     </LinearLayout>
 
                     <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                         android:id="@+id/sw_hi_res"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -1910,8 +1920,9 @@
                     </LinearLayout>
 
                     <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                         android:id="@+id/sw_golden_sound"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -2006,8 +2017,9 @@
                         android:letterSpacing="0.08" />
 
                     <Switch
-                            android:thumbTint="@color/switch_thumb_selector"
-                            android:trackTint="@color/switch_track_selector"
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
                         android:id="@+id/sw_multi_device"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />

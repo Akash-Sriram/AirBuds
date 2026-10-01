@@ -27,5 +27,6 @@
     <color name="ic_launcher_bg">#0D1117</color>
     <color name="ic_launcher_ring">#1F2937</color>
     <color name="ic_launcher_amber_glow">#1AFF9500</color>
-    <color name="switch_track_off">#CBD5E1</color>
+    <color name="switch_track_off">#E2E8F0</color>
+    <color name="switch_track_stroke">#64748B</color>
 </resources>
