@@ -4,43 +4,27 @@ A lightweight, bloat-free Android companion app for **realme Buds Air 8** (Model
 
 No account login, no telemetry, no tracking, and no internet permission. Standalone APK size is ~130 KB.
 
-> **Compatibility**: Tested and developed specifically for the **realme Buds Air 8 (Model: RMA2503)** on firmware `1.1.0.104`. Other Realme, OPPO, or OnePlus earbuds using Bestechnic (BES) chipsets may partially work depending on firmware variations.
+> **Compatibility**: Developed specifically for **realme Buds Air 8 (Model: RMA2503)** on firmware `1.1.0.104`. Other Realme, OPPO, or OnePlus earbuds using Bestechnic (BES) chipsets may work partially depending on firmware variations.
 
 ## Features
 
-- **Noise Control**: Toggle between Active Noise Cancellation (ANC), Transparency, and Off, with granular ANC level tuning (Smart, Max, Moderate, Mild).
+- **Noise Control**: Active Noise Cancellation (ANC), Transparency, and Off modes, with granular ANC level tuning (Smart, Max, Moderate, Mild).
 - **Notification & Quick Settings**: Persistent status widget and Quick Settings tile to switch ANC modes directly from Android's notification shade.
 - **Equalizer & Sound Effects**: Factory sound presets (Serenade, Original Sound, Clear Bass, Deep Bass), real-time 6-band custom EQ curve syncing, Dynamic Bass sliders, Spatial Audio, and Hi-Res audio toggle.
-- **Touch Controls**: Remap double tap, triple tap, and touch-and-hold gestures independently for each earbud with direct EEPROM persistence.
-- **Triple-Device Multipoint**: View paired devices history (with device-type icons and MAC addresses) and toggle simultaneous triple-device connection on/off.
-- **Real-Time Local Audio Detection**: Instant, event-driven active audio playback detection on the connected phone with zero polling lag.
+- **Touch Controls**: Remap double-tap, triple-tap, and touch-and-hold gestures independently for each earbud with direct EEPROM persistence.
+- **Triple-Device Multipoint**: View paired device history (with device-type icons and MAC addresses) and toggle simultaneous triple-device connection on/off.
 - **Smart Earbud Controls**: In-ear detection, wind noise reduction, vocal enhancement, auto-answer calls, and low-latency Game Mode.
 - **Find Earbuds**: Acoustic sweep chime to locate misplaced earbuds.
 - **Battery Status**: Live battery percentages and charging indicators for Left bud, Right bud, and the Charging Case.
-- **Local Device Settings Shortcut**: One-tap direct shortcut to Android Bluetooth Settings to disconnect or unpair earbuds.
 
 ## Known Limitations
 
-Due to hardware-level encryption and firmware restrictions in realme's BES MCU implementation (`066812`), certain operations cannot be performed by any third-party application:
+Due to firmware locks in realme's BES MCU implementation and Android OS security policies:
 
-### 1. Remote Device Disconnection & Forced Audio Switching
-* **Firmware Lock**: The realme Buds Air 8 firmware does not implement remote ACL disconnection or remote unpairing opcodes (`0x0429` / `0x040B`). In BBK's firmware architecture, this capability (`connectDisconnectDevice`) is reserved strictly for a small number of flagship OnePlus and Oppo models.
-* **Behavior**: To disconnect a remote paired device (e.g. secondary phone, laptop, or PC), you must turn off Bluetooth on that device or disconnect it from its own Bluetooth menu.
-* **Audio Handover**: Audio routing cannot be forcefully hijacked remotely; the earbud hardware arbitrates audio playback automatically at the chip level as soon as a connected device begins streaming media or receives a phone call.
-
-### 2. Remote Active Audio Telemetry
-* **Encryption & Firmware Masking**: The earbud MCU always sets the status flags to `0x00` for remote connected devices in the device list packet (`0x8112`), regardless of whether audio is streaming.
-* **AES-128 CCM Link Encryption**: Bluetooth ACL audio streams between secondary devices and the earbuds are encrypted point-to-point with AES-128 CCM keys negotiated during pairing, making over-the-air packet sniffing mathematically impossible.
-* **Behavior**: AirBuds reports `● Active Audio` strictly for the local phone (verified in real time via Android's `AudioManager` and `BluetoothA2dp` playing states), while accurately showing remote devices as `Connected` without speculative guesswork.
-
-### 3. Firmware Updates (OTA)
-* **Hardware Secure Boot**: The BES chipset bootloader strictly validates cryptographic digital signatures (RSA/ECDSA) on all firmware binary blocks before committing them to flash memory. Third-party binaries cannot be signed without Realme's private key.
-* **Permanent Bricking Risk**: Flashing dual-earbud firmware requires low-level DFU (Device Firmware Upgrade) partition synchronization across both independent earbuds simultaneously over RFCOMM. Any dropped packet, timeout, or partition handshake failure would permanently brick the earbuds into an unrecoverable state with no physical recovery interface.
-* **Recommendation**: If an official firmware update is ever needed, temporarily open the official HeyMelody app to install it.
-
-### 4. Local Bluetooth Profile Disconnect & Unpairing (Android Security Model)
-* **Platform Security Restrictions**: In Android OS, programmatic disconnection of system Bluetooth audio profiles (A2DP / HFP) and unpairing (`BluetoothDevice.removeBond()`) are protected by the `android.permission.BLUETOOTH_PRIVILEGED` signature permission. This permission is restricted by Google strictly to system applications pre-installed in `/system/priv-app` or signed with platform ROM keys.
-* **Behavior**: Third-party companion apps cannot forcibly tear down Android's system audio streaming or delete Bluetooth pairing bonds in the background. AirBuds terminates its own low-latency RFCOMM telemetry socket cleanly and provides an instant one-tap shortcut to native Android Bluetooth Settings so the user can disconnect or unpair directly.
+- **Remote Device Disconnect & Audio Hijacking**: The earbud MCU does not implement remote ACL disconnect opcodes (`0x0429` / `0x040B`). Disconnecting a secondary device must be done from that device. Audio routing is automatically arbitrated by the earbud hardware upon playback.
+- **Active Audio Detection**: The earbud MCU masks the streaming status (`0x00`) in device list packets (`0x8112`), making it impossible to detect which connected device is actively streaming audio via protocol telemetry.
+- **Local Disconnect & Unpair**: Android restricts programmatic disconnection of Bluetooth audio profiles (A2DP/HFP) and unpairing (`removeBond`) to privileged system apps (`BLUETOOTH_PRIVILEGED`). These actions must be performed via Android's native Bluetooth settings.
+- **Firmware Updates (OTA)**: Bootloader hardware secure boot requires Realme's cryptographic signature keys; flashing unsigned firmware is blocked to prevent unrecoverable bricking. Use the official HeyMelody app for OTA updates.
 
 ## Acknowledgements
 
