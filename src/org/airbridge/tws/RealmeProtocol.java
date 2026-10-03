@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 public class RealmeProtocol {
     private static int seq = 0;
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     // Opcodes
     public static final int OP_BATTERY = 0x00;
@@ -26,7 +27,8 @@ public class RealmeProtocol {
     public static final int OP_PERSONAL_ANC = 0x12; // Cmd 0x0412
     public static final int OP_PERSONAL_ANC_STORED = 0x1A; // Cmd 0x011A
     public static final int OP_MULTI_CONNECT_INFO = 0x12; // Cmd 0x0112 (action 0x01 / 0x81)
-    public static final int OP_OPERATE_MULTI_CONNECT = 0x0B; // Cmd 0x040B (operate multi-connect)
+    public static final int OP_OPERATE_MULTI_CONNECT = 0x0B; // Cmd 0x040B (legacy operate multi-connect)
+    public static final int OP_OPERATE_MULTI_DEVICE = 0x29; // Cmd 0x0429 (standard operate multi-device)
 
     public static final int OP_FIRMWARE = 0x05; // Cmd 0x0105 — firmware version query
     public static final int OP_KEY_FUNCTION = 0x08; // Cmd 0x0108 / 0x0401 — key function bindings
@@ -48,9 +50,12 @@ public class RealmeProtocol {
     public static final int FEAT_MULTI_DEVICE = 17;
     public static final int FEAT_DYNAMIC_BASS = 29;
 
+    public static final int OP_PREFERRED_DEVICE = 0x32; // Cmd 0x0132 / 0x8132 — preferred device
+
     public static class DeviceInfo {
         public final String name;
         public final byte[] mac;
+        public final int deviceType; // 0 = Phone, 1 = PC/Laptop, 2 = Tablet/Pad
         public final int connState;
         public final int activeState;
         public final boolean isConnected;
@@ -59,23 +64,39 @@ public class RealmeProtocol {
         public final boolean isPriority;
         public final boolean isActive;
 
-        public DeviceInfo(String name, byte[] mac, int connState, int activeState) {
+        public DeviceInfo(String name, byte[] mac, int deviceType, int connState, int activeState) {
             this.name = name;
             this.mac = mac;
             this.connState = connState;
             this.activeState = activeState;
             this.isConnected = (connState > 0);
+            // In Oppo/Realme RFCOMM packets:
+            // bit 0 (0x01): this phone (connected to app)
+            // bit 1 (0x02): main audio device
+            // bit 2 (0x04): playing / audio active
+            // bits 3-5: device type (0 = phone, 1 = pc, 2 = tablet)
             this.isCurrent = (activeState & 0x01) != 0;
             this.isPriority = (activeState & 0x02) != 0;
-            this.isAudioActive = (activeState & 0x04) != 0;
-            this.isActive = isAudioActive || isCurrent;
+            this.isAudioActive = (activeState & 0x04) != 0 || (activeState & 0x02) != 0;
+            int typeFromFlags = (activeState >> 3) & 0x07;
+            this.deviceType = (typeFromFlags > 0) ? typeFromFlags : deviceType;
+            this.isActive = isAudioActive;
+        }
+
+        public DeviceInfo(String name, byte[] mac, int connState, int activeState) {
+            this(name, mac, 0, connState, activeState);
         }
 
         public String getMacString() {
             if (mac == null || mac.length < 6) return "";
-            return String.format("%02X:%02X:%02X:%02X:%02X:%02X",
-                    mac[5] & 0xFF, mac[4] & 0xFF, mac[3] & 0xFF,
-                    mac[2] & 0xFF, mac[1] & 0xFF, mac[0] & 0xFF);
+            char[] chars = new char[17];
+            for (int i = 0; i < 6; i++) {
+                int v = mac[5 - i] & 0xFF;
+                chars[i * 3] = HEX_ARRAY[v >>> 4];
+                chars[i * 3 + 1] = HEX_ARRAY[v & 0x0F];
+                if (i < 5) chars[i * 3 + 2] = ':';
+            }
+            return new String(chars);
         }
     }
 
@@ -94,6 +115,7 @@ public class RealmeProtocol {
         void onEqPresetUpdate(int preset); // 0 = Original, 1 = Deep Bass, 2 = Serenade, 3 = Clear Bass
         void onFeatureUpdate(int featureId, int value);
         void onConnectedDevicesUpdate(java.util.List<DeviceInfo> devices);
+        void onPreferredDeviceUpdate(String mac, boolean isAuto);
         void onDeviceRoutingChanged();
         void onFirmwareUpdate(String version); // parsed from 0x8105
         void onSpatialTypeUpdate(int type); // 0=off, 1=fixed, 2=cinema from 0x812A
@@ -122,11 +144,16 @@ public class RealmeProtocol {
 
     public static String toHex(byte[] data, int len) {
         if (data == null || len <= 0) return "";
-        StringBuilder sb = new StringBuilder();
+        char[] hexChars = new char[len * 3 - 1];
         for (int i = 0; i < len; i++) {
-            sb.append(String.format("%02X ", data[i]));
+            int v = data[i] & 0xFF;
+            hexChars[i * 3] = HEX_ARRAY[v >>> 4];
+            hexChars[i * 3 + 1] = HEX_ARRAY[v & 0x0F];
+            if (i < len - 1) {
+                hexChars[i * 3 + 2] = ' ';
+            }
         }
-        return sb.toString().trim();
+        return new String(hexChars);
     }
 
     public static void parseStream(byte[] packet, int len, Listener listener) {
@@ -200,16 +227,16 @@ public class RealmeProtocol {
             }
 
             java.util.List<DeviceInfo> devList = new java.util.ArrayList<>();
-            while (devList.size() < devCount && idx + 8 < payload.length) {
+            while (devList.size() < devCount && idx + 10 <= payload.length) {
                 byte[] mac = new byte[6];
                 System.arraycopy(payload, idx, mac, 0, 6);
                 idx += 6;
 
-                if (idx + 3 >= payload.length) break;
                 int elemLen = payload[idx++] & 0xFF;
-                int entryEnd = idx + elemLen;
+                int entryEnd = (elemLen > 0 && idx + elemLen <= payload.length) ? (idx + elemLen) : -1;
+
                 int connState = payload[idx++] & 0xFF;
-                int activeState = payload[idx++] & 0xFF;
+                int flags = payload[idx++] & 0xFF;
                 int nameLen = payload[idx++] & 0xFF;
 
                 String name = "";
@@ -219,9 +246,12 @@ public class RealmeProtocol {
                     } catch (Exception ignored) {
                         name = new String(payload, idx, nameLen).trim().replace("\0", "");
                     }
+                    idx += nameLen;
                 }
-                devList.add(new DeviceInfo(name, mac, connState, activeState));
-                idx = (elemLen > 0 && entryEnd <= payload.length) ? entryEnd : (idx + Math.max(0, nameLen));
+                if (entryEnd > 0 && idx < entryEnd) {
+                    idx = entryEnd;
+                }
+                devList.add(new DeviceInfo(name, mac, (flags >> 3) & 0x07, connState, flags));
             }
             if (listener != null) {
                 listener.onConnectedDevicesUpdate(devList);
@@ -371,6 +401,26 @@ public class RealmeProtocol {
                 int type = payload[1] & 0xFF;
                 if (listener != null) {
                     listener.onSpatialTypeUpdate(type);
+                }
+            } else if (opcode == OP_PREFERRED_DEVICE && (action & 0xF0) == 0x80 && payload.length >= 2) {
+                // 0x8132: 00 02 <00=auto | 01 <MAC 6B>>
+                if (payload[0] == 0 && payload.length >= 3) {
+                    int mode = payload[2] & 0xFF;
+                    boolean isAuto = (mode == 0);
+                    String macStr = null;
+                    if (!isAuto && payload.length >= 9) {
+                        macStr = String.format("%02X:%02X:%02X:%02X:%02X:%02X",
+                            payload[3] & 0xFF, payload[4] & 0xFF, payload[5] & 0xFF,
+                            payload[6] & 0xFF, payload[7] & 0xFF, payload[8] & 0xFF);
+                    }
+                    if (listener != null) {
+                        listener.onPreferredDeviceUpdate(macStr, isAuto);
+                    }
+                }
+            } else if (opcode == OP_OPERATE_MULTI_DEVICE) {
+                // 0x8429 response to 0x0429 multi-device operation
+                if (listener != null) {
+                    listener.onDeviceRoutingChanged();
                 }
             }
         }

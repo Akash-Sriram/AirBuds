@@ -63,135 +63,143 @@
         android:layout_height="1dp"
         android:background="@color/card_border"
         android:layout_marginTop="16dp"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginBottom="12dp" />
 
-    <!-- Action 1: Switch Audio Output -->
+    <!-- LOCAL DEVICE ACTIONS (Visible only for 'This Phone') -->
     <LinearLayout
-        android:id="@+id/row_action_switch_audio"
+        android:id="@+id/ll_dialog_local_section"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingVertical="12dp"
-        android:paddingHorizontal="8dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="?android:attr/selectableItemBackground">
+        android:orientation="vertical"
+        android:visibility="gone">
 
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_audio_switch" />
-
+        <!-- Action: Disconnect This Phone -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:id="@+id/row_action_disconnect_local"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="14dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Switch Audio Output"
-                android:textColor="@color/text_main"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_disconnect" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Route audio streaming to this device"
-                android:textColor="@color/text_dim"
-                android:textSize="11sp" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Disconnect Earbuds"
+                    android:textColor="@color/text_main"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Disconnect Bluetooth audio and app connection"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Action: Unpair / Forget This Phone -->
+        <LinearLayout
+            android:id="@+id/row_action_unpair_local"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_delete" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unpair from This Phone"
+                    android:textColor="#E53935"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Remove Bluetooth pairing from phone settings"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11sp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Action 2: Connect / Disconnect -->
+    <!-- REMOTE DEVICE INFO SECTION (Visible for remote devices) -->
     <LinearLayout
-        android:id="@+id/row_action_connect_toggle"
+        android:id="@+id/ll_dialog_remote_section"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingVertical="12dp"
-        android:paddingHorizontal="8dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="?android:attr/selectableItemBackground">
+        android:orientation="vertical"
+        android:background="@drawable/card_section_bg"
+        android:padding="14dp"
+        android:visibility="gone">
 
-        <ImageView
-            android:id="@+id/iv_action_connect_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_disconnect" />
-
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/tv_dialog_remote_title"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="14dp">
+            android:text="MULTIPOINT AUDIO MANAGEMENT"
+            android:textColor="@color/primary"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="6dp" />
 
-            <TextView
-                android:id="@+id/tv_action_connect_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Disconnect"
-                android:textColor="@color/text_main"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_action_connect_sub"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Disconnect Bluetooth link"
-                android:textColor="@color/text_dim"
-                android:textSize="11sp" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/tv_dialog_remote_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="realme Buds Air 8 manages dual-device connections automatically at the hardware level.\n\n• Audio Switching: Start audio playback on any connected device and the earbuds switch automatically.\n• Disconnection: To disconnect this device, turn off its Bluetooth or disconnect from its Bluetooth menu (remote disconnection is locked in earbud firmware)."
+            android:textColor="@color/text_dim"
+            android:textSize="12sp"
+            android:lineSpacingExtra="3dp" />
     </LinearLayout>
 
-    <!-- Action 3: Remove Device -->
-    <LinearLayout
-        android:id="@+id/row_action_remove"
+    <!-- Close Button -->
+    <Button
+        android:id="@+id/btn_dialog_close"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingVertical="12dp"
-        android:paddingHorizontal="8dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="?android:attr/selectableItemBackground">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_delete" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="14dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Remove from Earbuds"
-                android:textColor="#E53935"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Unpair device from earbuds memory"
-                android:textColor="@color/text_dim"
-                android:textSize="11sp" />
-        </LinearLayout>
-    </LinearLayout>
+        android:layout_height="44dp"
+        android:layout_marginTop="16dp"
+        android:text="Close"
+        android:textAllCaps="false"
+        android:textColor="@color/text_main"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:background="@drawable/btn_inactive" />
 
 </LinearLayout>

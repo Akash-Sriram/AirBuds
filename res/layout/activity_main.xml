@@ -826,7 +826,7 @@
                         android:id="@+id/tv_device_nav_subtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Triple-device pairing, audio switching"
+                        android:text="Triple-device connection, auto switching"
                         android:textColor="@color/text_dim"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -2010,7 +2010,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="TRIPLE-DEVICE MULTIPOINT"
+                        android:text="TRIPLE-DEVICE CONNECTION"
                         android:textColor="@color/primary"
                         android:textSize="11sp"
                         android:textStyle="bold"
@@ -2028,7 +2028,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Allows earbuds to maintain simultaneous connection with up to 3 paired devices."
+                    android:text="Allows earbuds to maintain simultaneous connection with up to 3 devices. When disabled, only one device can connect at a time."
                     android:textColor="@color/text_dim"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -2099,7 +2099,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Tip: Tap a device to connect or route audio. Long-press to remove."
+                    android:text="Tip: Audio switches automatically upon playback. Tap a device for connection info or options."
                     android:textColor="@color/text_sub"
                     android:textSize="11sp"
                     android:layout_marginTop="10dp" />

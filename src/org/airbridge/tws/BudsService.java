@@ -6,9 +6,11 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -28,6 +30,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.ParcelUuid;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -71,6 +74,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     private volatile boolean mRunning = false;
     private volatile boolean mIsConnecting = false;
     private Thread mWorkerThread;
+    private BluetoothDevice mTargetDevice;
 
     public class LocalBinder extends Binder {
         public BudsService getService() {
@@ -130,10 +134,11 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         mState.deviceAddress = lastMac;
         createNotificationChannel();
 
-        // Register system Bluetooth connect / disconnect receiver
+        // Register system Bluetooth connect / disconnect / A2DP receiver
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothDevice.ACTION_ACL_CONNECTED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+        filter.addAction(BluetoothA2dp.ACTION_PLAYING_STATE_CHANGED);
         registerReceiver(mBtReceiver, filter);
 
         // Initiate connection to earbuds
@@ -255,6 +260,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
                     return;
                 }
 
+                mTargetDevice = target;
                 mState.deviceName = target.getName() != null ? target.getName() : "Realme Buds Air 8";
                 mState.deviceAddress = target.getAddress();
 
@@ -325,6 +331,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
                 mState.connState = BudsState.ConnState.CONNECTED;
                 mState.statusText = "● Connected";
+                stopBleFastPairScanner();
                 notifyStateChanged();
 
                 // Start dedicated packet reading thread
@@ -352,6 +359,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     private synchronized void disconnectInternal() {
+        mMainHandler.removeCallbacks(mDeviceQueryRunnable);
         mRunning = false;
         mIsConnecting = false;
         try {
@@ -382,6 +390,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         if (nm != null) {
             nm.cancel(NOTIF_ID);
         }
+        startBleFastPairScanner();
         notifyStateChanged();
     }
 
@@ -442,6 +451,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             sendCmd(RealmeProtocol.OP_FIRMWARE, 0x01, new byte[0]);
             Thread.sleep(80);
             sendCmd(RealmeProtocol.OP_ANC_STATE, 0x01, new byte[]{0x02, 0x01});
+            mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
         } catch (Exception e) {
             Log.e(TAG, "Error sending queries", e);
         }
@@ -532,60 +542,111 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         sendCmd(RealmeProtocol.OP_KEY_FUNCTION, 0x04, payload);
     }
 
+    private final Runnable mDeviceQueryRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mRunning && mState.connState == BudsState.ConnState.CONNECTED) {
+                queryConnectedDevices();
+            }
+        }
+    };
+
     public void queryConnectedDevices() {
         sendCmd(RealmeProtocol.OP_MULTI_CONNECT_INFO, 0x01, new byte[0]); // Cmd 0x0112: Query Multi-Connect Devices
-        sendCmd(0x04, 0x01, new byte[]{0x06}); // Legacy query fallback
+        sendCmd(RealmeProtocol.OP_PREFERRED_DEVICE, 0x01, new byte[]{0x02}); // Cmd 0x0132 02: Query Preferred Device
+        checkLocalAudioState();
     }
 
-    public void connectDevice(RealmeProtocol.DeviceInfo dev) {
-        if (dev == null || dev.mac == null || dev.mac.length < 6) return;
-        byte[] rev = new byte[6];
-        for (int i = 0; i < 6; i++) rev[i] = dev.mac[5 - i];
-        byte[] payload = new byte[7];
-        payload[0] = 0x01; // Connect
-        System.arraycopy(rev, 0, payload, 1, 6);
-        sendCmd(0x29, 0x04, payload);
-        mMainHandler.postDelayed(this::queryConnectedDevices, 900);
+    private void checkLocalAudioState() {
+        try {
+            android.media.AudioManager am = (android.media.AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            boolean isPlaying = (am != null && (am.isMusicActive() || am.getMode() == android.media.AudioManager.MODE_IN_CALL || am.getMode() == android.media.AudioManager.MODE_IN_COMMUNICATION));
+            if (mState.isLocalA2dpPlaying != isPlaying) {
+                mState.isLocalA2dpPlaying = isPlaying;
+                notifyStateChanged();
+            }
+        } catch (Exception ignored) {}
+    }
+    public boolean isThisPhone(String devName) {
+        if (devName == null) return false;
+        String curDevName = Settings.Global.getString(getContentResolver(), "device_name");
+        String btName = null;
+        try {
+            BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+            if (adapter != null) btName = adapter.getName();
+        } catch (SecurityException ignored) {}
+
+        String lower = devName.toLowerCase();
+        if (lower.contains("poco") || lower.contains("pocophone")) return true;
+        if (curDevName != null && devName.equalsIgnoreCase(curDevName)) return true;
+        if (btName != null && devName.equalsIgnoreCase(btName)) return true;
+        return devName.equalsIgnoreCase(Build.MODEL);
     }
 
-    public void disconnectDevice(RealmeProtocol.DeviceInfo dev) {
-        if (dev == null || dev.mac == null || dev.mac.length < 6) return;
-        byte[] rev = new byte[6];
-        for (int i = 0; i < 6; i++) rev[i] = dev.mac[5 - i];
-        byte[] payload = new byte[7];
-        payload[0] = 0x02; // Disconnect
-        System.arraycopy(rev, 0, payload, 1, 6);
-        sendCmd(0x29, 0x04, payload);
-        mMainHandler.postDelayed(this::queryConnectedDevices, 900);
+    public void disconnectThisPhone() {
+        Log.d(TAG, "disconnectThisPhone: Disconnecting local phone from earbuds");
+        BluetoothDevice target = mTargetDevice;
+        if (target == null) {
+            BluetoothManager bm = getSystemService(BluetoothManager.class);
+            BluetoothAdapter adapter = bm != null ? bm.getAdapter() : null;
+            if (adapter != null) {
+                try {
+                    Set<BluetoothDevice> bonded = adapter.getBondedDevices();
+                    if (bonded != null) {
+                        for (BluetoothDevice dev : bonded) {
+                            String name = dev.getName();
+                            if (name != null && (name.toLowerCase().contains("air8") || name.toLowerCase().contains("realme"))) {
+                                target = dev;
+                                break;
+                            }
+                        }
+                    }
+                } catch (SecurityException ignored) {}
+            }
+        }
+        disconnectInternal();
+        onDisconnected();
+        if (target != null) {
+            try {
+                Method m = target.getClass().getMethod("disconnect");
+                m.invoke(target);
+            } catch (Exception e) {
+                Log.w(TAG, "BluetoothDevice.disconnect reflection failed", e);
+            }
+        }
     }
 
-    public void removeDevice(RealmeProtocol.DeviceInfo dev) {
-        if (dev == null || dev.mac == null || dev.mac.length < 6) return;
-        byte[] rev = new byte[6];
-        for (int i = 0; i < 6; i++) rev[i] = dev.mac[5 - i];
-        byte[] payload = new byte[7];
-        payload[0] = 0x03; // Unpair / Remove
-        System.arraycopy(rev, 0, payload, 1, 6);
-        sendCmd(0x29, 0x04, payload);
-        mMainHandler.postDelayed(this::queryConnectedDevices, 900);
-    }
-
-    public void switchAudioDevice(RealmeProtocol.DeviceInfo dev) {
-        if (dev == null || dev.mac == null || dev.mac.length < 6) return;
-        byte[] rev = new byte[6];
-        for (int i = 0; i < 6; i++) rev[i] = dev.mac[5 - i];
-        byte[] payload = new byte[8];
-        payload[0] = 0x04; // Set Priority / Route Audio
-        payload[1] = 0x01;
-        System.arraycopy(rev, 0, payload, 2, 6);
-        sendCmd(0x29, 0x04, payload);
-        mMainHandler.postDelayed(this::queryConnectedDevices, 900);
-    }
-
-    public void setAutomaticAudioRouting() {
-        byte[] payload = new byte[]{0x04, 0x00}; // Automatic priority
-        sendCmd(0x29, 0x04, payload);
-        mMainHandler.postDelayed(this::queryConnectedDevices, 900);
+    public void unpairThisPhone() {
+        Log.d(TAG, "unpairThisPhone: Removing bond from this phone");
+        BluetoothDevice target = mTargetDevice;
+        if (target == null) {
+            BluetoothManager bm = getSystemService(BluetoothManager.class);
+            BluetoothAdapter adapter = bm != null ? bm.getAdapter() : null;
+            if (adapter != null) {
+                try {
+                    Set<BluetoothDevice> bonded = adapter.getBondedDevices();
+                    if (bonded != null) {
+                        for (BluetoothDevice dev : bonded) {
+                            String name = dev.getName();
+                            if (name != null && (name.toLowerCase().contains("air8") || name.toLowerCase().contains("realme"))) {
+                                target = dev;
+                                break;
+                            }
+                        }
+                    }
+                } catch (SecurityException ignored) {}
+            }
+        }
+        disconnectInternal();
+        onDisconnected();
+        if (target != null) {
+            try {
+                Method m = target.getClass().getMethod("removeBond");
+                m.invoke(target);
+            } catch (Exception e) {
+                Log.w(TAG, "BluetoothDevice.removeBond reflection failed", e);
+            }
+        }
     }
 
     public void ringBuds(boolean ring) {
@@ -703,6 +764,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
         Log.d(TAG, "onConnectedDevicesUpdate: " + sb.toString());
         mState.devices = new ArrayList<>(devices);
+        notifyStateChanged();
+    }
+
+    @Override
+    public void onPreferredDeviceUpdate(String mac, boolean isAuto) {
+        Log.d(TAG, "onPreferredDeviceUpdate: mac=" + mac + ", isAuto=" + isAuto);
+        mState.preferredDeviceMac = mac;
+        mState.isPreferredAuto = isAuto;
         notifyStateChanged();
     }
 
@@ -876,6 +945,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
                     logPacket("SYS", "Earbuds disconnected from Android system.");
                     onDisconnected();
                 }
+            } else if (BluetoothA2dp.ACTION_PLAYING_STATE_CHANGED.equals(action)) {
+                int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothA2dp.STATE_NOT_PLAYING);
+                boolean isPlaying = (state == BluetoothA2dp.STATE_PLAYING);
+                Log.d(TAG, "A2DP playing state changed: isPlaying=" + isPlaying + " (" + state + ")");
+                if (mState.isLocalA2dpPlaying != isPlaying) {
+                    mState.isLocalA2dpPlaying = isPlaying;
+                    notifyStateChanged();
+                }
             }
         }
 
@@ -939,7 +1016,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
                 .build());
 
             ScanSettings settings = new ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
                 .setReportDelay(0)
                 .build();
 
