@@ -1248,8 +1248,15 @@ public class MainActivity extends Activity implements BudsState.Listener {
             if (rowDisconnectLocal != null) {
                 rowDisconnectLocal.setOnClickListener(v -> {
                     dialog.dismiss();
-                    Toast.makeText(this, "Disconnecting earbuds from this phone...", Toast.LENGTH_SHORT).show();
-                    mService.disconnectThisPhone();
+                    if (mService != null) {
+                        mService.disconnectThisPhone();
+                    }
+                    Toast.makeText(this, "Opening Bluetooth Settings to disconnect...", Toast.LENGTH_SHORT).show();
+                    try {
+                        startActivity(new Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS));
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Could not open Bluetooth Settings", Toast.LENGTH_SHORT).show();
+                    }
                 });
             }
 
@@ -1297,10 +1304,16 @@ public class MainActivity extends Activity implements BudsState.Listener {
             new AlertDialog.Builder(this)
                 .setTitle("Unpair Earbuds?")
                 .setIcon(R.drawable.ic_delete)
-                .setMessage("This will remove the Bluetooth pairing record for these earbuds from this phone. You will need to pair them again to reconnect.")
-                .setPositiveButton("Unpair", (dialog, which) -> {
-                    mService.unpairThisPhone();
-                    Toast.makeText(this, "Unpairing earbuds from this phone...", Toast.LENGTH_SHORT).show();
+                .setMessage("Android restricts unpairing to system Bluetooth Settings.\n\nTap 'Open Settings', find " + displayName + ", tap the settings gear icon, and select 'Unpair' or 'Forget'.")
+                .setPositiveButton("Open Settings", (d, which) -> {
+                    if (mService != null) {
+                        mService.unpairThisPhone();
+                    }
+                    try {
+                        startActivity(new Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS));
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Could not open Bluetooth Settings", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton("Cancel", null)
                 .show();

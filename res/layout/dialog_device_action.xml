@@ -109,7 +109,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Disconnect Bluetooth audio and app connection"
+                    android:text="Close app session and open Bluetooth Settings"
                     android:textColor="@color/text_dim"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -151,7 +151,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Remove Bluetooth pairing from phone settings"
+                    android:text="Open Bluetooth Settings to unpair / forget device"
                     android:textColor="@color/text_dim"
                     android:textSize="11sp" />
             </LinearLayout>

@@ -17,7 +17,7 @@ No account login, no telemetry, no tracking, and no internet permission. Standal
 - **Smart Earbud Controls**: In-ear detection, wind noise reduction, vocal enhancement, auto-answer calls, and low-latency Game Mode.
 - **Find Earbuds**: Acoustic sweep chime to locate misplaced earbuds.
 - **Battery Status**: Live battery percentages and charging indicators for Left bud, Right bud, and the Charging Case.
-- **Local Device Management**: Cleanly disconnect or unpair earbuds directly from the app using native Android Bluetooth APIs.
+- **Local Device Settings Shortcut**: One-tap direct shortcut to Android Bluetooth Settings to disconnect or unpair earbuds.
 
 ## Known Limitations
 
@@ -37,6 +37,10 @@ Due to hardware-level encryption and firmware restrictions in realme's BES MCU i
 * **Hardware Secure Boot**: The BES chipset bootloader strictly validates cryptographic digital signatures (RSA/ECDSA) on all firmware binary blocks before committing them to flash memory. Third-party binaries cannot be signed without Realme's private key.
 * **Permanent Bricking Risk**: Flashing dual-earbud firmware requires low-level DFU (Device Firmware Upgrade) partition synchronization across both independent earbuds simultaneously over RFCOMM. Any dropped packet, timeout, or partition handshake failure would permanently brick the earbuds into an unrecoverable state with no physical recovery interface.
 * **Recommendation**: If an official firmware update is ever needed, temporarily open the official HeyMelody app to install it.
+
+### 4. Local Bluetooth Profile Disconnect & Unpairing (Android Security Model)
+* **Platform Security Restrictions**: In Android OS, programmatic disconnection of system Bluetooth audio profiles (A2DP / HFP) and unpairing (`BluetoothDevice.removeBond()`) are protected by the `android.permission.BLUETOOTH_PRIVILEGED` signature permission. This permission is restricted by Google strictly to system applications pre-installed in `/system/priv-app` or signed with platform ROM keys.
+* **Behavior**: Third-party companion apps cannot forcibly tear down Android's system audio streaming or delete Bluetooth pairing bonds in the background. AirBuds terminates its own low-latency RFCOMM telemetry socket cleanly and provides an instant one-tap shortcut to native Android Bluetooth Settings so the user can disconnect or unpair directly.
 
 ## Acknowledgements
 

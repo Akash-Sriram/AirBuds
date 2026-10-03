@@ -584,69 +584,15 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     public void disconnectThisPhone() {
-        Log.d(TAG, "disconnectThisPhone: Disconnecting local phone from earbuds");
-        BluetoothDevice target = mTargetDevice;
-        if (target == null) {
-            BluetoothManager bm = getSystemService(BluetoothManager.class);
-            BluetoothAdapter adapter = bm != null ? bm.getAdapter() : null;
-            if (adapter != null) {
-                try {
-                    Set<BluetoothDevice> bonded = adapter.getBondedDevices();
-                    if (bonded != null) {
-                        for (BluetoothDevice dev : bonded) {
-                            String name = dev.getName();
-                            if (name != null && (name.toLowerCase().contains("air8") || name.toLowerCase().contains("realme"))) {
-                                target = dev;
-                                break;
-                            }
-                        }
-                    }
-                } catch (SecurityException ignored) {}
-            }
-        }
+        Log.d(TAG, "disconnectThisPhone: Disconnecting local SPP session");
         disconnectInternal();
         onDisconnected();
-        if (target != null) {
-            try {
-                Method m = target.getClass().getMethod("disconnect");
-                m.invoke(target);
-            } catch (Exception e) {
-                Log.w(TAG, "BluetoothDevice.disconnect reflection failed", e);
-            }
-        }
     }
 
     public void unpairThisPhone() {
-        Log.d(TAG, "unpairThisPhone: Removing bond from this phone");
-        BluetoothDevice target = mTargetDevice;
-        if (target == null) {
-            BluetoothManager bm = getSystemService(BluetoothManager.class);
-            BluetoothAdapter adapter = bm != null ? bm.getAdapter() : null;
-            if (adapter != null) {
-                try {
-                    Set<BluetoothDevice> bonded = adapter.getBondedDevices();
-                    if (bonded != null) {
-                        for (BluetoothDevice dev : bonded) {
-                            String name = dev.getName();
-                            if (name != null && (name.toLowerCase().contains("air8") || name.toLowerCase().contains("realme"))) {
-                                target = dev;
-                                break;
-                            }
-                        }
-                    }
-                } catch (SecurityException ignored) {}
-            }
-        }
+        Log.d(TAG, "unpairThisPhone: Disconnecting local SPP session prior to unpair");
         disconnectInternal();
         onDisconnected();
-        if (target != null) {
-            try {
-                Method m = target.getClass().getMethod("removeBond");
-                m.invoke(target);
-            } catch (Exception e) {
-                Log.w(TAG, "BluetoothDevice.removeBond reflection failed", e);
-            }
-        }
     }
 
     public void ringBuds(boolean ring) {
