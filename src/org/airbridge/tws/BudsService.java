@@ -22,6 +22,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Binder;
@@ -132,6 +133,15 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         String lastMac = getSharedPreferences("airbridge_prefs", Context.MODE_PRIVATE)
             .getString("last_known_mac", "60:55:56:F9:98:FD");
         mState.deviceAddress = lastMac;
+
+        SharedPreferences gPrefs = getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE);
+        mState.gestureLeftDouble = gPrefs.getInt("gesture_ld", 1);
+        mState.gestureLeftTriple = gPrefs.getInt("gesture_lt", 6);
+        mState.gestureLeftHold = gPrefs.getInt("gesture_lh", 8);
+        mState.gestureRightDouble = gPrefs.getInt("gesture_rd", 1);
+        mState.gestureRightTriple = gPrefs.getInt("gesture_rt", 6);
+        mState.gestureRightHold = gPrefs.getInt("gesture_rh", 8);
+
         createNotificationChannel();
 
         // Register system Bluetooth connect / disconnect / A2DP receiver
@@ -451,6 +461,8 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             sendCmd(RealmeProtocol.OP_FIRMWARE, 0x01, new byte[0]);
             Thread.sleep(80);
             sendCmd(RealmeProtocol.OP_ANC_STATE, 0x01, new byte[]{0x02, 0x01});
+            Thread.sleep(80);
+            sendCmd(RealmeProtocol.OP_KEY_FUNCTION_QUERY, 0x01, new byte[0]);
             mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
         } catch (Exception e) {
             Log.e(TAG, "Error sending queries", e);
@@ -487,6 +499,8 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     public void setAncHoldCycle(int mask) {
         mState.ancHoldCycleMask = mask;
+        // Realme Buds Air 8 uses cycleType 2 [0x02, 0x02, mask]; send both subtypes for reliability
+        sendCmd(RealmeProtocol.OP_ANC_SET, 0x04, new byte[]{0x02, 0x02, (byte) mask});
         sendCmd(RealmeProtocol.OP_ANC_SET, 0x04, new byte[]{0x02, 0x01, (byte) mask});
         notifyStateChanged();
     }
@@ -532,6 +546,17 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     public void setGesture(int dev, int act, int fn) {
+        SharedPreferences.Editor edit = getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE).edit();
+        if (dev == 1) {
+            if (act == 2) { mState.gestureLeftDouble = fn; edit.putInt("gesture_ld", fn); }
+            else if (act == 3) { mState.gestureLeftTriple = fn; edit.putInt("gesture_lt", fn); }
+            else if (act == 4) { mState.gestureLeftHold = fn; edit.putInt("gesture_lh", fn); }
+        } else if (dev == 2) {
+            if (act == 2) { mState.gestureRightDouble = fn; edit.putInt("gesture_rd", fn); }
+            else if (act == 3) { mState.gestureRightTriple = fn; edit.putInt("gesture_rt", fn); }
+            else if (act == 4) { mState.gestureRightHold = fn; edit.putInt("gesture_rh", fn); }
+        }
+        edit.apply();
         byte[] payload = new byte[]{
             0x01, // Count
             (byte) dev,
@@ -539,7 +564,75 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             (byte) act,
             (byte) fn
         };
-        sendCmd(RealmeProtocol.OP_KEY_FUNCTION, 0x04, payload);
+        sendCmd(RealmeProtocol.OP_KEY_FUNCTION_SET, 0x04, payload);
+        notifyStateChanged();
+    }
+
+    public void setGesturesBulk(int ld, int lt, int lh, int rd, int rt, int rh) {
+        mState.gestureLeftDouble = ld;
+        mState.gestureLeftTriple = lt;
+        mState.gestureLeftHold = lh;
+        mState.gestureRightDouble = rd;
+        mState.gestureRightTriple = rt;
+        mState.gestureRightHold = rh;
+
+        if (!mState.isHelmetMode) {
+            getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putInt("gesture_ld", ld)
+                .putInt("gesture_lt", lt)
+                .putInt("gesture_lh", lh)
+                .putInt("gesture_rd", rd)
+                .putInt("gesture_rt", rt)
+                .putInt("gesture_rh", rh)
+                .apply();
+        }
+
+        byte[] payload = new byte[]{
+            0x06, // Count: 6 slots
+            0x01, 0x01, 0x02, (byte) ld, // Left Double
+            0x01, 0x01, 0x03, (byte) lt, // Left Triple
+            0x01, 0x01, 0x04, (byte) lh, // Left Hold
+            0x02, 0x01, 0x02, (byte) rd, // Right Double
+            0x02, 0x01, 0x03, (byte) rt, // Right Triple
+            0x02, 0x01, 0x04, (byte) rh  // Right Hold
+        };
+        sendCmd(RealmeProtocol.OP_KEY_FUNCTION_SET, 0x04, payload);
+        notifyStateChanged();
+    }
+
+    public void setHelmetMode(boolean enabled) {
+        SharedPreferences prefs = getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE);
+        if (enabled) {
+            prefs.edit()
+                .putInt("pre_helmet_ld", mState.gestureLeftDouble)
+                .putInt("pre_helmet_lt", mState.gestureLeftTriple)
+                .putInt("pre_helmet_lh", mState.gestureLeftHold)
+                .putInt("pre_helmet_rd", mState.gestureRightDouble)
+                .putInt("pre_helmet_rt", mState.gestureRightTriple)
+                .putInt("pre_helmet_rh", mState.gestureRightHold)
+                .putBoolean("pre_helmet_inear", mState.inEarDetection)
+                .apply();
+
+            mState.isHelmetMode = true;
+            // Lock all touch controls to None (0x00)
+            setGesturesBulk(0, 0, 0, 0, 0, 0);
+            // Disable In-Ear Detection to prevent wear bouncing under helmet
+            setFeature(RealmeProtocol.FEAT_IN_EAR, 0);
+        } else {
+            mState.isHelmetMode = false;
+            int ld = prefs.getInt("pre_helmet_ld", 1);
+            int lt = prefs.getInt("pre_helmet_lt", 6);
+            int lh = prefs.getInt("pre_helmet_lh", 8);
+            int rd = prefs.getInt("pre_helmet_rd", 1);
+            int rt = prefs.getInt("pre_helmet_rt", 6);
+            int rh = prefs.getInt("pre_helmet_rh", 8);
+            boolean inEar = prefs.getBoolean("pre_helmet_inear", true);
+
+            setGesturesBulk(ld, lt, lh, rd, rt, rh);
+            setFeature(RealmeProtocol.FEAT_IN_EAR, inEar ? 1 : 0);
+        }
+        notifyStateChanged();
     }
 
     private final Runnable mDeviceQueryRunnable = new Runnable() {
@@ -751,16 +844,31 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     @Override
     public void onKeyFunctionUpdate(int dev, int act, int fn) {
+        SharedPreferences.Editor edit = getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE).edit();
         if (dev == 1) { // Left
-            if (act == 2) mState.gestureLeftDouble = fn;
-            else if (act == 3) mState.gestureLeftTriple = fn;
-            else if (act == 4) mState.gestureLeftHold = fn;
+            if (act == 2) { mState.gestureLeftDouble = fn; edit.putInt("gesture_ld", fn); }
+            else if (act == 3) { mState.gestureLeftTriple = fn; edit.putInt("gesture_lt", fn); }
+            else if (act == 4) { mState.gestureLeftHold = fn; edit.putInt("gesture_lh", fn); }
         } else if (dev == 2) { // Right
-            if (act == 2) mState.gestureRightDouble = fn;
-            else if (act == 3) mState.gestureRightTriple = fn;
-            else if (act == 4) mState.gestureRightHold = fn;
+            if (act == 2) { mState.gestureRightDouble = fn; edit.putInt("gesture_rd", fn); }
+            else if (act == 3) { mState.gestureRightTriple = fn; edit.putInt("gesture_rt", fn); }
+            else if (act == 4) { mState.gestureRightHold = fn; edit.putInt("gesture_rh", fn); }
         }
+        mState.gestureVersion++;
+        edit.apply();
         notifyStateChanged();
+    }
+
+    public void queryGestures() {
+        sendCmd(RealmeProtocol.OP_KEY_FUNCTION_QUERY, 0x01, new byte[0]);
+    }
+
+    public void queryAncState() {
+        sendCmd(RealmeProtocol.OP_ANC_STATE, 0x01, new byte[]{0x02, 0x01});
+    }
+
+    public void queryEqState() {
+        sendCmd(RealmeProtocol.OP_EQ_STATE, 0x01, new byte[0]);
     }
 
     @Override

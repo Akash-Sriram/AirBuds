@@ -72,12 +72,12 @@ public class AncTileService extends TileService implements BudsState.Listener {
         }
 
         // Cycle through modes according to configured cycle mask
-        // Mask bits: bit 0: Off (1), bit 1: ANC (2), bit 2: Transparency (4)
+        // Mask bits (Air 8 hardware): bit 0: Off (1), bit 1: Transparency (2), bit 3: ANC (8)
         int current = state.ancMode;
         int next = 8; // Default to ANC
 
         if (current == 8) { // Currently ANC
-            if ((state.ancHoldCycleMask & 4) != 0) {
+            if ((state.ancHoldCycleMask & 2) != 0) {
                 next = 2; // Switch to Transparency
             } else if ((state.ancHoldCycleMask & 1) != 0) {
                 next = 1; // Switch to Off
@@ -85,13 +85,13 @@ public class AncTileService extends TileService implements BudsState.Listener {
         } else if (current == 2) { // Currently Transparency
             if ((state.ancHoldCycleMask & 1) != 0) {
                 next = 1; // Switch to Off
-            } else if ((state.ancHoldCycleMask & 2) != 0) {
+            } else if ((state.ancHoldCycleMask & 8) != 0) {
                 next = 8; // Switch to ANC
             }
         } else { // Currently Off (1)
-            if ((state.ancHoldCycleMask & 2) != 0) {
+            if ((state.ancHoldCycleMask & 8) != 0) {
                 next = 8; // Switch to ANC
-            } else if ((state.ancHoldCycleMask & 4) != 0) {
+            } else if ((state.ancHoldCycleMask & 2) != 0) {
                 next = 2; // Switch to Transparency
             }
         }

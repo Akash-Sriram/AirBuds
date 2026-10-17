@@ -45,8 +45,9 @@ public class BudsState {
     public int ancMode = 8;
     // Level: 0x10 = Smart, 4 = Max, 3 = Moderate, 2 = Mild
     public int ancLevel = 0x10;
-    // Hold Cycle Mask: bit 0 = Off (1), bit 1 = ANC (2), bit 2 = Transparency (4)
-    public int ancHoldCycleMask = 0x06; // Default ANC + Transparency (2 + 4)
+    // Hold Cycle Mask (Air 8 hardware): bit 0 = Off (1), bit 1 = Transparency (2), bit 3 = ANC (8)
+    public int ancHoldCycleMask = 0x0A; // Default ANC + Transparency (8 + 2 = 10)
+    public boolean isHelmetMode = false;
     public boolean personalAncStored = false;
 
     // EQ State
@@ -81,6 +82,7 @@ public class BudsState {
     public int gestureRightDouble = 0x01;
     public int gestureRightTriple = 0x06;
     public int gestureRightHold = 0x08;
+    public int gestureVersion = 0;
 
     // Status message for display
     public String statusText = "○ Disconnected";
@@ -104,6 +106,7 @@ public class BudsState {
         this.ancMode = other.ancMode;
         this.ancLevel = other.ancLevel;
         this.ancHoldCycleMask = other.ancHoldCycleMask;
+        this.isHelmetMode = other.isHelmetMode;
         this.personalAncStored = other.personalAncStored;
         this.eqPreset = other.eqPreset;
         System.arraycopy(other.eqBands, 0, this.eqBands, 0, 6);
@@ -128,6 +131,7 @@ public class BudsState {
         this.gestureRightDouble = other.gestureRightDouble;
         this.gestureRightTriple = other.gestureRightTriple;
         this.gestureRightHold = other.gestureRightHold;
+        this.gestureVersion = other.gestureVersion;
         this.statusText = other.statusText;
     }
 }

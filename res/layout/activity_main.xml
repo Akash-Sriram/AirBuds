@@ -595,6 +595,57 @@
 
             </LinearLayout>
 
+            <!-- Helmet / Ride Mode Quick Toggle Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/card_bg"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp"
+                android:layout_marginBottom="12dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_helmet"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="Helmet Mode" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Helmet / Ride Mode"
+                        android:textColor="@color/text_main"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Locks touch sensors &amp; in-ear detection to prevent ANC toggling in helmet"
+                        android:textColor="@color/text_dim"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <Switch
+                    android:track="@drawable/switch_track"
+                    android:thumb="@drawable/switch_thumb"
+                    android:splitTrack="false"
+                    android:id="@+id/sw_helmet_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+
             <!-- Smart Sensing Quick Toggle Card -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -1192,6 +1243,63 @@
                         android:text="RFCOMM SPP (0x1101)"
                         android:textColor="@color/text_main"
                         android:textSize="13sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/divider"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="4dp" />
+
+                <!-- Check for Updates Row -->
+                <LinearLayout
+                    android:id="@+id/btn_check_update"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingVertical="8dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Check for Updates"
+                            android:textColor="@color/text_main"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_info_update_sub"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Check GitHub Releases for latest APK"
+                            android:textColor="@color/text_dim"
+                            android:textSize="11sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btn_check_update_action"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:text="Check"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:background="@drawable/btn_primary"
+                        android:textSize="11sp"
+                        android:paddingHorizontal="14dp"
+                        android:clickable="false"
+                        android:focusable="false" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -2156,6 +2264,57 @@
 
 
 
+            <!-- Helmet / Touch Lock Mode Card in Gestures Form -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/card_bg"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp"
+                android:layout_marginBottom="14dp">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_helmet"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="Helmet Mode" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Helmet / Touch Lock Mode"
+                        android:textColor="@color/text_main"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Lock touch sensors so helmet padding cannot trigger gestures"
+                        android:textColor="@color/text_dim"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <Switch
+                    android:track="@drawable/switch_track"
+                    android:thumb="@drawable/switch_thumb"
+                    android:splitTrack="false"
+                    android:id="@+id/sw_helmet_mode_gestures"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -2201,10 +2360,9 @@
                     <Spinner
                         android:id="@+id/sp_left_double"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="42dp"
                         android:layout_weight="1"
-                        android:background="@drawable/btn_inactive"
-                        android:paddingStart="8dp" />
+                        android:background="@drawable/bg_spinner_gesture" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -2224,10 +2382,9 @@
                     <Spinner
                         android:id="@+id/sp_left_triple"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="42dp"
                         android:layout_weight="1"
-                        android:background="@drawable/btn_inactive"
-                        android:paddingStart="8dp" />
+                        android:background="@drawable/bg_spinner_gesture" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -2247,10 +2404,9 @@
                     <Spinner
                         android:id="@+id/sp_left_hold"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="42dp"
                         android:layout_weight="1"
-                        android:background="@drawable/btn_inactive"
-                        android:paddingStart="8dp" />
+                        android:background="@drawable/bg_spinner_gesture" />
                 </LinearLayout>
 
                 <View
@@ -2286,10 +2442,9 @@
                     <Spinner
                         android:id="@+id/sp_right_double"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="42dp"
                         android:layout_weight="1"
-                        android:background="@drawable/btn_inactive"
-                        android:paddingStart="8dp" />
+                        android:background="@drawable/bg_spinner_gesture" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -2309,10 +2464,9 @@
                     <Spinner
                         android:id="@+id/sp_right_triple"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="42dp"
                         android:layout_weight="1"
-                        android:background="@drawable/btn_inactive"
-                        android:paddingStart="8dp" />
+                        android:background="@drawable/bg_spinner_gesture" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -2332,10 +2486,9 @@
                     <Spinner
                         android:id="@+id/sp_right_hold"
                         android:layout_width="0dp"
-                        android:layout_height="40dp"
+                        android:layout_height="42dp"
                         android:layout_weight="1"
-                        android:background="@drawable/btn_inactive"
-                        android:paddingStart="8dp" />
+                        android:background="@drawable/bg_spinner_gesture" />
                 </LinearLayout>
 
                 <Button
@@ -2391,6 +2544,7 @@
                         android:layout_weight="1"
                         android:text="ANC"
                         android:textColor="@color/text_main"
+                        android:buttonTint="@color/primary"
                         android:textSize="12sp"
                         android:checked="true" />
 
@@ -2401,6 +2555,7 @@
                         android:layout_weight="1"
                         android:text="Transparency"
                         android:textColor="@color/text_main"
+                        android:buttonTint="@color/primary"
                         android:textSize="12sp"
                         android:checked="true" />
 
@@ -2411,6 +2566,7 @@
                         android:layout_weight="1"
                         android:text="Off"
                         android:textColor="@color/text_main"
+                        android:buttonTint="@color/primary"
                         android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>

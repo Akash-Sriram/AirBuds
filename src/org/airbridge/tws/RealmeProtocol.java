@@ -31,7 +31,9 @@ public class RealmeProtocol {
     public static final int OP_OPERATE_MULTI_DEVICE = 0x29; // Cmd 0x0429 (standard operate multi-device)
 
     public static final int OP_FIRMWARE = 0x05; // Cmd 0x0105 — firmware version query
-    public static final int OP_KEY_FUNCTION = 0x08; // Cmd 0x0108 / 0x0401 — key function bindings
+    public static final int OP_KEY_FUNCTION = 0x08; // Legacy alias for OP_KEY_FUNCTION_QUERY
+    public static final int OP_KEY_FUNCTION_QUERY = 0x08; // Cmd 0x0108 — key function bindings query
+    public static final int OP_KEY_FUNCTION_SET = 0x01; // Cmd 0x0401 — key function bindings set
     public static final int OP_CUSTOM_EQ_LIST = 0x22; // Cmd 0x0122 — list custom presets
     public static final int OP_CUSTOM_EQ_SAVE = 0x18; // Cmd 0x0418 — save/select custom preset
     public static final int OP_SPATIAL_TYPE = 0x2A; // Cmd 0x012A — read spatial mode
@@ -271,35 +273,74 @@ public class RealmeProtocol {
                 if (listener != null) {
                     listener.onPersonalAncResult(res);
                 }
+            } else if (subType == 0x01 && payload.length < 8) {
+                // ANC command response or mode event: 01 01 <mode> or 01 02 <level>
+                int val = payload[payload.length - 1] & 0xFF;
+                int sub = (payload.length >= 3) ? (payload[1] & 0xFF) : 0x01;
+                if (listener != null) {
+                    if (sub == 0x02) {
+                        listener.onAncLevelUpdate(val);
+                    } else {
+                        listener.onAncModeUpdate(val);
+                    }
+                }
+            } else if (subType == 0x02 && payload.length < 8) {
+                // ANC cycle response: 02 02 <mask> or 02 01 <mask>
+                int val = payload[payload.length - 1] & 0xFF;
+                if (listener != null) {
+                    listener.onAncHoldCycleUpdate(val);
+                }
+            } else if (subType == 0x03 && payload.length >= 2) {
+                // ANC mode notification event: 03 <act> <val> or 03 <act> <subType> <val> or 03 <val>
+                int val = payload[payload.length - 1] & 0xFF;
+                int act = (payload.length >= 3) ? (payload[1] & 0xFF) : 0x01;
+                int sub = (payload.length >= 4) ? (payload[2] & 0xFF) : 0x01;
+                if (listener != null) {
+                    if (act == 0x02 || (act == 0x01 && sub == 0x02 && payload.length == 3)) {
+                        listener.onAncHoldCycleUpdate(val);
+                    } else if (act == 0x04 || sub == 0x02) {
+                        listener.onAncLevelUpdate(val);
+                    } else {
+                        listener.onAncModeUpdate(val);
+                    }
+                }
             } else if (subType == 0xF2) {
                 // Audio routing handover broadcast from earbuds
                 if (listener != null) {
                     listener.onDeviceRoutingChanged();
                 }
             }
-        } else if ((action & 0xF0) == 0x80) {
-            if (opcode == OP_ANC_STATE && payload.length >= 4) {
-                int group = payload[1] & 0xFF;
-                int subType = payload[2] & 0xFF;
-                int val = payload[3] & 0xFF;
-                if (listener != null) {
-                    if (group == 0x02 && subType == 0x01) {
-                        listener.onAncHoldCycleUpdate(val);
-                    } else if (subType == 0x02) {
-                        listener.onAncLevelUpdate(val);
-                    } else {
-                        listener.onAncModeUpdate(val);
-                    }
+        } else if (opcode == OP_ANC_STATE && payload.length >= 2) {
+            int val = payload[payload.length - 1] & 0xFF;
+            int group = (payload.length >= 3) ? (payload[1] & 0xFF) : 0x01;
+            int subType = (payload.length >= 4) ? (payload[2] & 0xFF) : 0x01;
+            if (listener != null) {
+                if (group == 0x02 && (subType == 0x01 || subType == 0x02)) {
+                    listener.onAncHoldCycleUpdate(val);
+                } else if (subType == 0x02) {
+                    listener.onAncLevelUpdate(val);
+                } else {
+                    listener.onAncModeUpdate(val);
                 }
-            } else if (opcode == OP_KEY_FUNCTION && payload.length >= 2) {
+            }
+        } else if ((action & 0xF0) == 0x80) {
+            if (opcode == OP_KEY_FUNCTION && payload.length >= 2) {
                 int count = payload[1] & 0xFF;
                 int idx = 2;
                 while (idx + 4 <= payload.length) {
                     int dev = payload[idx] & 0xFF;
+                    int btn = payload[idx + 1] & 0xFF;
                     int act = payload[idx + 2] & 0xFF;
                     int fn = payload[idx + 3] & 0xFF;
-                    if (listener != null) {
-                        listener.onKeyFunctionUpdate(dev, act, fn);
+                    if (btn == 0x01) { // Only primary button group (excludes on-call btn 0x06)
+                        if (dev == 0x04) { // Both buds
+                            if (listener != null) {
+                                listener.onKeyFunctionUpdate(1, act, fn);
+                                listener.onKeyFunctionUpdate(2, act, fn);
+                            }
+                        } else if (listener != null) {
+                            listener.onKeyFunctionUpdate(dev, act, fn);
+                        }
                     }
                     idx += 4;
                 }

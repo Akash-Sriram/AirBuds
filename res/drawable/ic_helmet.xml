@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Motorcycle Helmet Contour -->
+    <path
+        android:strokeColor="@color/primary"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M12,3 C6.5,3 3,7 3,12 C3,15.5 4.5,18 6.5,19.5 L8.5,20.5 C10,21 14,21 16.5,20.5 L19.5,18 C20.5,16 21,13.5 21,11 C21,6.5 17.5,3 12,3 Z" />
+    <!-- Visor Area -->
+    <path
+        android:strokeColor="@color/primary"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M7,11 L18,11 C19,11 19.5,12.5 19,14 L17,16 C16,16.8 14,17 12,17 L8,17 C6.5,17 5.5,15.5 6,14 Z" />
+</vector>

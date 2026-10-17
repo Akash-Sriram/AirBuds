@@ -29,6 +29,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -102,6 +103,13 @@ public class MainActivity extends Activity implements BudsState.Listener {
     private Spinner spRightTriple;
     private Spinner spRightHold;
     private Button btnApplyTouch;
+    private boolean mUpdatingSpinnersFromState = false;
+    private boolean mGesturesInitialized = false;
+    private boolean mLastHelmetMode = false;
+    private int mLastRenderedGestureVersion = -1;
+
+    private Switch swHelmetMode;
+    private Switch swHelmetModeGestures;
 
     private Switch swMultiDevice;
     private View btnRefreshDevices;
@@ -340,6 +348,14 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (formId == FORM_DEVICES && mService != null) {
             renderDeviceList(mService.getState().devices);
         }
+        if (formId == FORM_GESTURES && mService != null) {
+            updateGestureSpinnersFromState(mService.getState());
+            mService.queryGestures();
+        }
+        if (formId == FORM_SOUND && mService != null) {
+            mService.queryAncState();
+            mService.queryEqState();
+        }
 
         ScrollView rootScroll = findViewById(R.id.root_scroll);
         if (rootScroll != null) {
@@ -453,6 +469,8 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
         swGameMode = findViewById(R.id.sw_game_mode);
         swInEar = findViewById(R.id.sw_in_ear);
+        swHelmetMode = findViewById(R.id.sw_helmet_mode);
+        swHelmetModeGestures = findViewById(R.id.sw_helmet_mode_gestures);
         swWindNoise = findViewById(R.id.sw_wind_noise);
         swVocalEnhance = findViewById(R.id.sw_vocal_enhance);
         swShowNotification = findViewById(R.id.sw_show_notification);
@@ -473,6 +491,22 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 tvInfoAppVersion.setText("v" + verName + " (Production)");
             } catch (Exception ignored) {}
         }
+
+        View btnCheckUpdate = findViewById(R.id.btn_check_update);
+        if (btnCheckUpdate != null) {
+            btnCheckUpdate.setOnClickListener(v -> AppUpdater.checkForUpdate(MainActivity.this, true));
+        }
+        View btnCheckUpdateAction = findViewById(R.id.btn_check_update_action);
+        if (btnCheckUpdateAction != null) {
+            btnCheckUpdateAction.setOnClickListener(v -> AppUpdater.checkForUpdate(MainActivity.this, true));
+        }
+
+        // Silent check for releases after UI settles
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (!isFinishing()) {
+                AppUpdater.checkForUpdate(MainActivity.this, false);
+            }
+        }, 3500);
 
         cardNavSound = findViewById(R.id.card_nav_sound);
         cardNavDevices = findViewById(R.id.card_nav_devices);
@@ -526,31 +560,87 @@ public class MainActivity extends Activity implements BudsState.Listener {
         updateAncUi(8);
     }
 
+    private ArrayAdapter<GestureOption> createGestureAdapter() {
+        ArrayAdapter<GestureOption> adapter = new ArrayAdapter<>(
+                this,
+                R.layout.item_gesture_spinner,
+                new ArrayList<>(mGestureOptions)
+        );
+        adapter.setDropDownViewResource(R.layout.item_gesture_dropdown);
+        return adapter;
+    }
+
     private void setupGestureOptions() {
         mGestureOptions.clear();
         mGestureOptions.add(new GestureOption(1, "Play / Pause"));
         mGestureOptions.add(new GestureOption(6, "Next Track"));
         mGestureOptions.add(new GestureOption(5, "Previous Track"));
-        mGestureOptions.add(new GestureOption(8, "ANC Cycle"));
-        mGestureOptions.add(new GestureOption(11, "Volume Up"));
-        mGestureOptions.add(new GestureOption(12, "Volume Down"));
-        mGestureOptions.add(new GestureOption(17, "Game Mode"));
-        mGestureOptions.add(new GestureOption(13, "Switch Device"));
+        mGestureOptions.add(new GestureOption(8, "Noise Control (ANC)"));
         mGestureOptions.add(new GestureOption(3, "Voice Assistant"));
-        mGestureOptions.add(new GestureOption(0, "None"));
+        mGestureOptions.add(new GestureOption(13, "Switch Device"));
+        mGestureOptions.add(new GestureOption(17, "Game Mode"));
+        mGestureOptions.add(new GestureOption(0, "None (Disabled)"));
 
-        ArrayAdapter<GestureOption> adapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                mGestureOptions
-        );
+        spLeftDouble.setAdapter(createGestureAdapter());
+        spLeftTriple.setAdapter(createGestureAdapter());
+        if (spLeftHold != null) spLeftHold.setAdapter(createGestureAdapter());
+        spRightDouble.setAdapter(createGestureAdapter());
+        spRightTriple.setAdapter(createGestureAdapter());
+        if (spRightHold != null) spRightHold.setAdapter(createGestureAdapter());
 
-        spLeftDouble.setAdapter(adapter);
-        spLeftTriple.setAdapter(adapter);
-        if (spLeftHold != null) spLeftHold.setAdapter(adapter);
-        spRightDouble.setAdapter(adapter);
-        spRightTriple.setAdapter(adapter);
-        if (spRightHold != null) spRightHold.setAdapter(adapter);
+        setupGestureSpinnerListeners();
+    }
+
+    private interface GestureSelectCallback {
+        void onSelected(GestureOption opt);
+    }
+
+    private class SimpleSpinnerListener implements AdapterView.OnItemSelectedListener {
+        private final GestureSelectCallback callback;
+        private int lastPosition = -1;
+
+        SimpleSpinnerListener(GestureSelectCallback callback) {
+            this.callback = callback;
+        }
+
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            if (mUpdatingSpinnersFromState) return;
+            if (position == lastPosition) return;
+            lastPosition = position;
+            GestureOption opt = (GestureOption) parent.getItemAtPosition(position);
+            if (opt != null) {
+                callback.onSelected(opt);
+            }
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> parent) {}
+    }
+
+    private void setupGestureSpinnerListeners() {
+        spLeftDouble.setOnItemSelectedListener(new SimpleSpinnerListener((opt) -> {
+            if (mService != null) mService.setGesture(1, 2, opt.id);
+        }));
+        spLeftTriple.setOnItemSelectedListener(new SimpleSpinnerListener((opt) -> {
+            if (mService != null) mService.setGesture(1, 3, opt.id);
+        }));
+        if (spLeftHold != null) {
+            spLeftHold.setOnItemSelectedListener(new SimpleSpinnerListener((opt) -> {
+                if (mService != null) mService.setGesture(1, 4, opt.id);
+            }));
+        }
+        spRightDouble.setOnItemSelectedListener(new SimpleSpinnerListener((opt) -> {
+            if (mService != null) mService.setGesture(2, 2, opt.id);
+        }));
+        spRightTriple.setOnItemSelectedListener(new SimpleSpinnerListener((opt) -> {
+            if (mService != null) mService.setGesture(2, 3, opt.id);
+        }));
+        if (spRightHold != null) {
+            spRightHold.setOnItemSelectedListener(new SimpleSpinnerListener((opt) -> {
+                if (mService != null) mService.setGesture(2, 4, opt.id);
+            }));
+        }
     }
 
     private void setupListeners() {
@@ -737,6 +827,20 @@ public class MainActivity extends Activity implements BudsState.Listener {
         // Ring Buds & Fit Test
         if (btnRingBuds != null) btnRingBuds.setOnClickListener(v -> toggleRingBuds());
         if (btnFitTest != null) btnFitTest.setOnClickListener(v -> showFitTestDialog());
+
+        // Helmet / Ride Mode Switches
+        android.widget.CompoundButton.OnCheckedChangeListener helmetListener = (btn, checked) -> {
+            if (btn.isPressed() && mService != null) {
+                mService.setHelmetMode(checked);
+                if (checked) {
+                    Toast.makeText(this, "Helmet Mode active: Touch & wear sensors locked", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Helmet Mode disabled: Gestures restored", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
+        if (swHelmetMode != null) swHelmetMode.setOnCheckedChangeListener(helmetListener);
+        if (swHelmetModeGestures != null) swHelmetModeGestures.setOnCheckedChangeListener(helmetListener);
     }
 
     private void updateAncHoldCycleFromUi() {
@@ -753,7 +857,8 @@ public class MainActivity extends Activity implements BudsState.Listener {
             return;
         }
 
-        int mask = (off ? 1 : 0) | (anc ? 2 : 0) | (trans ? 4 : 0);
+        // Air 8 hardware bitmask: bit 0: Off (1), bit 1: Transparency (2), bit 3: ANC (8)
+        int mask = (off ? 1 : 0) | (trans ? 2 : 0) | (anc ? 8 : 0);
         if (mService != null) {
             mService.setAncHoldCycle(mask);
             Toast.makeText(this, "Cycling modes updated on earbuds", Toast.LENGTH_SHORT).show();
@@ -770,12 +875,15 @@ public class MainActivity extends Activity implements BudsState.Listener {
         GestureOption rt = (GestureOption) spRightTriple.getSelectedItem();
         GestureOption rh = spRightHold != null ? (GestureOption) spRightHold.getSelectedItem() : null;
 
-        if (ld != null) mService.setGesture(1, 2, ld.id);
-        if (lt != null) mService.setGesture(1, 3, lt.id);
-        if (lh != null) mService.setGesture(1, 4, lh.id);
-        if (rd != null) mService.setGesture(2, 2, rd.id);
-        if (rt != null) mService.setGesture(2, 3, rt.id);
-        if (rh != null) mService.setGesture(2, 4, rh.id);
+        int ldId = ld != null ? ld.id : 1;
+        int ltId = lt != null ? lt.id : 6;
+        int lhId = lh != null ? lh.id : 8;
+        int rdId = rd != null ? rd.id : 1;
+        int rtId = rt != null ? rt.id : 6;
+        int rhId = rh != null ? rh.id : 8;
+
+        // Use atomic bulk write packet (0x0401) to update all slots in EEPROM at once
+        mService.setGesturesBulk(ldId, ltId, lhId, rdId, rtId, rhId);
 
         Toast.makeText(this, "Touch controls saved to earbuds", Toast.LENGTH_SHORT).show();
     }
@@ -884,10 +992,10 @@ public class MainActivity extends Activity implements BudsState.Listener {
             tvAncLevelVal.setText(lvlName + "  ›");
         }
 
-        // Noise Control Cycling Checkboxes
+        // Noise Control Cycling Checkboxes (Air 8 hardware: Off=1, Trans=2, ANC=8)
         if (cbCycleOff != null) cbCycleOff.setChecked((state.ancHoldCycleMask & 1) != 0);
-        if (cbCycleAnc != null) cbCycleAnc.setChecked((state.ancHoldCycleMask & 2) != 0);
-        if (cbCycleTrans != null) cbCycleTrans.setChecked((state.ancHoldCycleMask & 4) != 0);
+        if (cbCycleTrans != null) cbCycleTrans.setChecked((state.ancHoldCycleMask & 2) != 0);
+        if (cbCycleAnc != null) cbCycleAnc.setChecked((state.ancHoldCycleMask & 8) != 0);
 
         // EQ Presets
         updateEqRadioUi(state.eqPreset);
@@ -910,6 +1018,8 @@ public class MainActivity extends Activity implements BudsState.Listener {
         }
 
         // Feature Switches
+        if (swHelmetMode != null) swHelmetMode.setChecked(state.isHelmetMode);
+        if (swHelmetModeGestures != null) swHelmetModeGestures.setChecked(state.isHelmetMode);
         if (swAutoAnswer != null) swAutoAnswer.setChecked(state.autoAnswer);
         if (swInEar != null) swInEar.setChecked(state.inEarDetection);
         if (swGameMode != null) swGameMode.setChecked(state.gameMode);
@@ -934,13 +1044,38 @@ public class MainActivity extends Activity implements BudsState.Listener {
         // Multipoint Device List
         renderDeviceList(state.devices);
 
-        // Gesture Spinners
-        setSpinnerSelection(spLeftDouble, state.gestureLeftDouble);
-        setSpinnerSelection(spLeftTriple, state.gestureLeftTriple);
-        setSpinnerSelection(spLeftHold, state.gestureLeftHold);
-        setSpinnerSelection(spRightDouble, state.gestureRightDouble);
-        setSpinnerSelection(spRightTriple, state.gestureRightTriple);
-        setSpinnerSelection(spRightHold, state.gestureRightHold);
+        // Gesture Controls State
+        boolean gesturesEnabled = !state.isHelmetMode;
+        if (spLeftDouble != null) spLeftDouble.setEnabled(gesturesEnabled);
+        if (spLeftTriple != null) spLeftTriple.setEnabled(gesturesEnabled);
+        if (spLeftHold != null) spLeftHold.setEnabled(gesturesEnabled);
+        if (spRightDouble != null) spRightDouble.setEnabled(gesturesEnabled);
+        if (spRightTriple != null) spRightTriple.setEnabled(gesturesEnabled);
+        if (spRightHold != null) spRightHold.setEnabled(gesturesEnabled);
+        if (btnApplyTouch != null) btnApplyTouch.setEnabled(gesturesEnabled);
+
+        // Gesture Spinners: sync initially, when helmet mode changes, or when hardware table updates
+        if (!mGesturesInitialized || state.isHelmetMode != mLastHelmetMode || state.gestureVersion != mLastRenderedGestureVersion) {
+            mGesturesInitialized = true;
+            mLastHelmetMode = state.isHelmetMode;
+            mLastRenderedGestureVersion = state.gestureVersion;
+            updateGestureSpinnersFromState(state);
+        }
+    }
+
+    private void updateGestureSpinnersFromState(BudsState state) {
+        if (state == null) return;
+        mUpdatingSpinnersFromState = true;
+        try {
+            setSpinnerSelection(spLeftDouble, state.gestureLeftDouble);
+            setSpinnerSelection(spLeftTriple, state.gestureLeftTriple);
+            setSpinnerSelection(spLeftHold, state.gestureLeftHold);
+            setSpinnerSelection(spRightDouble, state.gestureRightDouble);
+            setSpinnerSelection(spRightTriple, state.gestureRightTriple);
+            setSpinnerSelection(spRightHold, state.gestureRightHold);
+        } finally {
+            mUpdatingSpinnersFromState = false;
+        }
     }
 
     private void updateWearStatus(TextView tv, int status) {
