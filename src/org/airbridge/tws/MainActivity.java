@@ -1219,9 +1219,40 @@ public class MainActivity extends Activity implements BudsState.Listener {
         boolean isLocalAudioPlaying = (mService != null && mService.getState().isLocalA2dpPlaying)
             || (am != null && (am.isMusicActive() || am.getMode() == AudioManager.MODE_IN_CALL || am.getMode() == AudioManager.MODE_IN_COMMUNICATION));
 
-        for (int i = 0; i < devices.size(); i++) {
-            RealmeProtocol.DeviceInfo dev = devices.get(i);
+        List<RealmeProtocol.DeviceInfo> connectedList = new ArrayList<>();
+        List<RealmeProtocol.DeviceInfo> historyList = new ArrayList<>();
+
+        for (RealmeProtocol.DeviceInfo d : devices) {
+            if (d.isConnected) {
+                if (isThisPhone(d)) {
+                    connectedList.add(0, d); // Local phone first
+                } else {
+                    connectedList.add(d);
+                }
+            } else {
+                historyList.add(d);
+            }
+        }
+
+        List<RealmeProtocol.DeviceInfo> displayList = new ArrayList<>();
+        displayList.addAll(connectedList);
+        displayList.addAll(historyList);
+
+        for (int i = 0; i < displayList.size(); i++) {
+            RealmeProtocol.DeviceInfo dev = displayList.get(i);
             boolean isLocal = isThisPhone(dev);
+
+            // Add section header for paired history if needed
+            if (i == connectedList.size() && !historyList.isEmpty() && !connectedList.isEmpty()) {
+                TextView tvSection = new TextView(this);
+                tvSection.setText("PAIRED HISTORY (" + historyList.size() + ")");
+                tvSection.setTextColor(getColor(R.color.text_dim));
+                tvSection.setTextSize(11);
+                tvSection.setTypeface(null, Typeface.BOLD);
+                int padSection = (int) (12 * getResources().getDisplayMetrics().density);
+                tvSection.setPadding(padSection, padSection, padSection, (int) (4 * getResources().getDisplayMetrics().density));
+                llDeviceList.addView(tvSection);
+            }
 
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -1256,7 +1287,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
             textCol.addView(tvName);
 
             TextView tvSub = new TextView(this);
-            String subPrefix = isLocal ? "This phone • " : "Paired device • ";
+            String subPrefix = isLocal ? "This phone • " : (dev.isConnected ? "Connected • " : "Paired device • ");
             tvSub.setText(subPrefix + dev.getMacString());
             tvSub.setTextColor(getColor(R.color.text_dim));
             tvSub.setTextSize(11);
@@ -1277,10 +1308,15 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 tvDevStatus.setTextColor(getColor(R.color.success));
                 tvSub.setText("This phone • Playing Audio");
                 tvSub.setTextColor(getColor(R.color.success));
+            } else if (isLocal) {
+                tvDevStatus.setText("Connected");
+                tvDevStatus.setTextColor(getColor(R.color.info));
+                tvSub.setText("This phone • Idle");
+                tvSub.setTextColor(getColor(R.color.text_dim));
             } else if (dev.isConnected) {
                 tvDevStatus.setText("Connected");
                 tvDevStatus.setTextColor(getColor(R.color.info));
-                tvSub.setText((isLocal ? "This phone • " : "Connected • ") + dev.getMacString());
+                tvSub.setText("Connected • " + dev.getMacString());
                 tvSub.setTextColor(getColor(R.color.text_dim));
             } else {
                 tvDevStatus.setText("Not connected");
@@ -1297,12 +1333,45 @@ public class MainActivity extends Activity implements BudsState.Listener {
             });
             llDeviceList.addView(row);
 
-            if (i < devices.size() - 1) {
+            if (i < displayList.size() - 1) {
                 View divider = new View(this);
                 divider.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1));
                 divider.setBackgroundColor(getColor(R.color.card_border));
                 llDeviceList.addView(divider);
             }
+        }
+    }
+
+    private void routeAudioToThisPhone() {
+        try {
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (am != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    android.media.AudioAttributes attr = new android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+                    android.media.AudioFocusRequest afr = new android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                        .setAudioAttributes(attr)
+                        .build();
+                    am.requestAudioFocus(afr);
+                } else {
+                    am.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
+                }
+                android.media.ToneGenerator tg = new android.media.ToneGenerator(AudioManager.STREAM_MUSIC, 1);
+                tg.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 50);
+                tg.release();
+            }
+            if (mService != null) {
+                mService.setPreferredDevice(null, true);
+            }
+            Toast.makeText(this, "Audio routed to this phone", Toast.LENGTH_SHORT).show();
+            if (mService != null) {
+                mService.queryConnectedDevices();
+            }
+        } catch (Exception e) {
+            Log.e("AirBudsUI", "routeAudioToThisPhone error", e);
+            Toast.makeText(this, "Requested audio routing to this phone", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1333,6 +1402,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
     private boolean isThisPhone(RealmeProtocol.DeviceInfo dev) {
         if (dev == null) return false;
+        if (dev.isCurrent) return true;
         try {
             String localMac = android.provider.Settings.Secure.getString(getContentResolver(), "bluetooth_address");
             if (localMac != null && !localMac.isEmpty() && !localMac.equalsIgnoreCase("02:00:00:00:00:00")) {
@@ -1351,11 +1421,11 @@ public class MainActivity extends Activity implements BudsState.Listener {
             if (adapter != null) btName = adapter.getName();
         } catch (SecurityException ignored) {}
 
-        String lower = devName.toLowerCase();
-        if (lower.contains("poco") || lower.contains("pocophone")) return true;
-        if (curDevName != null && devName.equalsIgnoreCase(curDevName)) return true;
-        if (btName != null && devName.equalsIgnoreCase(btName)) return true;
-        return devName.equalsIgnoreCase(Build.MODEL);
+        String trimName = devName.trim();
+        if (curDevName != null && !curDevName.isEmpty() && trimName.equalsIgnoreCase(curDevName.trim())) return true;
+        if (btName != null && !btName.isEmpty() && trimName.equalsIgnoreCase(btName.trim())) return true;
+        if (Build.MODEL != null && trimName.equalsIgnoreCase(Build.MODEL.trim())) return true;
+        return false;
     }
 
     private void onDeviceRowClicked(RealmeProtocol.DeviceInfo dev) {
@@ -1383,6 +1453,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
         TextView tvBadge = view.findViewById(R.id.tv_dialog_dev_badge);
 
         View llLocalSection = view.findViewById(R.id.ll_dialog_local_section);
+        View rowTakeoverAudio = view.findViewById(R.id.row_action_takeover_audio);
         View rowDisconnectLocal = view.findViewById(R.id.row_action_disconnect_local);
         View rowUnpairLocal = view.findViewById(R.id.row_action_unpair_local);
 
@@ -1400,6 +1471,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (isLocal && isLocalAudioPlaying) {
             tvBadge.setText("● Active Audio");
             tvBadge.setTextColor(getColor(R.color.success));
+        } else if (isLocal) {
+            tvBadge.setText("Connected");
+            tvBadge.setTextColor(getColor(R.color.info));
         } else if (dev.isConnected) {
             tvBadge.setText("Connected");
             tvBadge.setTextColor(getColor(R.color.info));
@@ -1411,6 +1485,13 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (isLocal) {
             if (llLocalSection != null) llLocalSection.setVisibility(View.VISIBLE);
             if (llRemoteActions != null) llRemoteActions.setVisibility(View.GONE);
+
+            if (rowTakeoverAudio != null) {
+                rowTakeoverAudio.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    routeAudioToThisPhone();
+                });
+            }
 
             if (rowDisconnectLocal != null) {
                 rowDisconnectLocal.setOnClickListener(v -> {

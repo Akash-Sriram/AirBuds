@@ -764,9 +764,43 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
     }
 
+    public void setPreferredDevice(String mac, boolean isAuto) {
+        mState.isPreferredAuto = isAuto;
+        mState.preferredDeviceMac = mac;
+        if (isAuto) {
+            sendCmd(RealmeProtocol.OP_PREFERRED_DEVICE, 0x01, new byte[]{0x01, 0x00});
+        } else if (mac != null) {
+            byte[] macBytes = parseMac(mac);
+            if (macBytes != null) {
+                byte[] p = new byte[8];
+                p[0] = 0x01;
+                p[1] = 0x01;
+                System.arraycopy(macBytes, 0, p, 2, 6);
+                sendCmd(RealmeProtocol.OP_PREFERRED_DEVICE, 0x01, p);
+            }
+        }
+        notifyStateChanged();
+    }
+
+    private byte[] parseMac(String macStr) {
+        if (macStr == null) return null;
+        String[] parts = macStr.split(":");
+        if (parts.length != 6) return null;
+        byte[] bytes = new byte[6];
+        try {
+            for (int i = 0; i < 6; i++) {
+                bytes[i] = (byte) Integer.parseInt(parts[i], 16);
+            }
+            return bytes;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
 
     public boolean isThisPhone(RealmeProtocol.DeviceInfo dev) {
         if (dev == null) return false;
+        if (dev.isCurrent) return true;
         try {
             String localMac = Settings.Secure.getString(getContentResolver(), "bluetooth_address");
             if (localMac != null && !localMac.isEmpty() && !localMac.equalsIgnoreCase("02:00:00:00:00:00")) {
@@ -785,11 +819,11 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             if (adapter != null) btName = adapter.getName();
         } catch (SecurityException ignored) {}
 
-        String lower = devName.toLowerCase();
-        if (lower.contains("poco") || lower.contains("pocophone")) return true;
-        if (curDevName != null && devName.equalsIgnoreCase(curDevName)) return true;
-        if (btName != null && devName.equalsIgnoreCase(btName)) return true;
-        return devName.equalsIgnoreCase(Build.MODEL);
+        String trimName = devName.trim();
+        if (curDevName != null && !curDevName.isEmpty() && trimName.equalsIgnoreCase(curDevName.trim())) return true;
+        if (btName != null && !btName.isEmpty() && trimName.equalsIgnoreCase(btName.trim())) return true;
+        if (Build.MODEL != null && trimName.equalsIgnoreCase(Build.MODEL.trim())) return true;
+        return false;
     }
 
 

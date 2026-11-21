@@ -258,33 +258,6 @@ public class RealmeProtocol {
             if (listener != null) {
                 listener.onConnectedDevicesUpdate(devList);
             }
-        } else if (opcode == 0x04 && payload.length >= 3 && (payload[0] & 0xFF) == 0xF2) {
-            // Real-time audio routing update push: F2 <count> [MAC 6B] [ID 1B] [Active 1B] [NameLen 1B] [Name] ...
-            int devCount = payload[1] & 0xFF;
-            int idx = 2;
-            java.util.List<DeviceInfo> devList = new java.util.ArrayList<>();
-            while (devList.size() < devCount && idx + 9 <= payload.length) {
-                byte[] mac = new byte[6];
-                System.arraycopy(payload, idx, mac, 0, 6);
-                idx += 6;
-                int devType = payload[idx++] & 0xFF;
-                int isActive = payload[idx++] & 0xFF;
-                int nameLen = payload[idx++] & 0xFF;
-                String name = "";
-                if (nameLen > 0 && idx + nameLen <= payload.length) {
-                    try {
-                        name = new String(payload, idx, nameLen, "UTF-8").trim().replace("\0", "");
-                    } catch (Exception ignored) {
-                        name = new String(payload, idx, nameLen).trim().replace("\0", "");
-                    }
-                    idx += nameLen;
-                }
-                boolean audioActive = (isActive & 0x01) != 0;
-                devList.add(new DeviceInfo(name, mac, (devType >> 3) & 0x07, 0, isActive, audioActive));
-            }
-            if (listener != null && !devList.isEmpty()) {
-                listener.onAudioRoutingUpdate(devList);
-            }
         } else if (opcode == 0x04 && (action == 0x02 || action == 0x05 || (action & 0xF0) == 0x80) && payload.length >= 2) {
             int subType = payload[0] & 0xFF;
             if (subType == 0x04 && payload.length >= 5) {
