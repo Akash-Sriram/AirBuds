@@ -2907,39 +2907,50 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
                     <CheckBox
                         android:id="@+id/cb_cycle_anc"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text="ANC"
                         android:textColor="@color/text_main"
                         android:buttonTint="@color/primary"
                         android:textSize="12sp"
+                        android:maxLines="1"
                         android:checked="true" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
 
                     <CheckBox
                         android:id="@+id/cb_cycle_trans"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text="Transparency"
                         android:textColor="@color/text_main"
                         android:buttonTint="@color/primary"
                         android:textSize="12sp"
+                        android:maxLines="1"
                         android:checked="true" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
 
                     <CheckBox
                         android:id="@+id/cb_cycle_off"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text="Off"
                         android:textColor="@color/text_main"
                         android:buttonTint="@color/primary"
-                        android:textSize="12sp" />
+                        android:textSize="12sp"
+                        android:maxLines="1" />
                 </LinearLayout>
             </LinearLayout>
 
