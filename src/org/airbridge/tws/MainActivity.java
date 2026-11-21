@@ -1260,20 +1260,23 @@ public class MainActivity extends Activity implements BudsState.Listener {
             int padV = (int) (4 * getResources().getDisplayMetrics().density);
             tvDevStatus.setPadding(padH, padV, padH, padV);
 
-            if (isLocal) {
-                if (isLocalAudioPlaying) {
-                    tvDevStatus.setText("● Active Audio");
-                    tvDevStatus.setTextColor(getColor(R.color.success));
-                } else {
-                    tvDevStatus.setText("This phone (Connected)");
-                    tvDevStatus.setTextColor(getColor(R.color.info));
-                }
+            boolean isPlaying = isLocal ? isLocalAudioPlaying : (dev.isConnected && dev.isAudioActive);
+
+            if (isPlaying) {
+                tvDevStatus.setText("● Active Audio");
+                tvDevStatus.setTextColor(getColor(R.color.success));
+                tvSub.setText((isLocal ? "This phone • " : "Connected • ") + "Playing Audio");
+                tvSub.setTextColor(getColor(R.color.success));
             } else if (dev.isConnected) {
                 tvDevStatus.setText("Connected");
                 tvDevStatus.setTextColor(getColor(R.color.info));
+                tvSub.setText((isLocal ? "This phone • " : "Connected • ") + "Idle");
+                tvSub.setTextColor(getColor(R.color.text_dim));
             } else {
                 tvDevStatus.setText("Not connected");
                 tvDevStatus.setTextColor(getColor(R.color.offline));
+                tvSub.setText("Paired device • " + dev.getMacString());
+                tvSub.setTextColor(getColor(R.color.text_dim));
             }
             row.addView(tvDevStatus);
 
@@ -1378,28 +1381,27 @@ public class MainActivity extends Activity implements BudsState.Listener {
         View rowConnectRemote = view.findViewById(R.id.row_action_connect_remote);
         View rowRemoveRemote = view.findViewById(R.id.row_action_remove_remote);
 
-        View llRemoteSection = view.findViewById(R.id.ll_dialog_remote_section);
-        TextView tvRemoteTitle = view.findViewById(R.id.tv_dialog_remote_title);
-        TextView tvRemoteBody = view.findViewById(R.id.tv_dialog_remote_body);
-
         Button btnClose = view.findViewById(R.id.btn_dialog_close);
 
         ivIcon.setImageResource(getDeviceIcon(dev));
         tvName.setText(displayName);
         tvMac.setText(dev.getMacString());
 
-        if (isLocal) {
-            if (isLocalAudioPlaying) {
-                tvBadge.setText("Active Audio");
-                tvBadge.setTextColor(getColor(R.color.success));
-            } else {
-                tvBadge.setText("This Phone (Connected)");
-                tvBadge.setTextColor(getColor(R.color.info));
-            }
+        boolean isPlaying = isLocal ? isLocalAudioPlaying : (dev.isConnected && dev.isAudioActive);
+        if (isPlaying) {
+            tvBadge.setText("● Active Audio");
+            tvBadge.setTextColor(getColor(R.color.success));
+        } else if (dev.isConnected) {
+            tvBadge.setText(isLocal ? "Connected" : "Connected (Idle)");
+            tvBadge.setTextColor(getColor(R.color.info));
+        } else {
+            tvBadge.setText("Not connected");
+            tvBadge.setTextColor(getColor(R.color.offline));
+        }
 
+        if (isLocal) {
             if (llLocalSection != null) llLocalSection.setVisibility(View.VISIBLE);
             if (llRemoteActions != null) llRemoteActions.setVisibility(View.GONE);
-            if (llRemoteSection != null) llRemoteSection.setVisibility(View.GONE);
 
             if (rowDisconnectLocal != null) {
                 rowDisconnectLocal.setOnClickListener(v -> {
@@ -1420,26 +1422,13 @@ public class MainActivity extends Activity implements BudsState.Listener {
         } else {
             if (llLocalSection != null) llLocalSection.setVisibility(View.GONE);
             if (llRemoteActions != null) llRemoteActions.setVisibility(View.VISIBLE);
-            if (llRemoteSection != null) llRemoteSection.setVisibility(View.VISIBLE);
 
             if (dev.isConnected) {
-                tvBadge.setText("Connected");
-                tvBadge.setTextColor(getColor(R.color.info));
                 if (rowDisconnectRemote != null) rowDisconnectRemote.setVisibility(View.VISIBLE);
                 if (rowConnectRemote != null) rowConnectRemote.setVisibility(View.GONE);
-                if (tvRemoteTitle != null) tvRemoteTitle.setText("MULTIPOINT AUDIO MANAGEMENT");
-                if (tvRemoteBody != null) {
-                    tvRemoteBody.setText("realme Buds Air 8 manages dual-device connections automatically at the hardware level.\n\n• Disconnection: Tap 'Disconnect Device' to disconnect " + displayName + " from the earbuds without unpairing.\n• Audio Switching: Start audio playback on any connected device and the earbuds switch automatically.");
-                }
             } else {
-                tvBadge.setText("Not connected");
-                tvBadge.setTextColor(getColor(R.color.offline));
                 if (rowDisconnectRemote != null) rowDisconnectRemote.setVisibility(View.GONE);
                 if (rowConnectRemote != null) rowConnectRemote.setVisibility(View.VISIBLE);
-                if (tvRemoteTitle != null) tvRemoteTitle.setText("PAIRED DEVICE MEMORY");
-                if (tvRemoteBody != null) {
-                    tvRemoteBody.setText(displayName + " is stored in the earbuds' paired memory (up to 5 devices).\n\n• Connecting: Tap 'Connect Device' to establish a link from the earbuds to " + displayName + ".\n• Memory: Earbuds automatically rotate the oldest inactive paired device when a new device connects.");
-                }
             }
 
             if (rowDisconnectRemote != null) {

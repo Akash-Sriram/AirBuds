@@ -72,14 +72,10 @@ public class RealmeProtocol {
             this.connState = connState;
             this.activeState = activeState;
             this.isConnected = (connState > 0);
-            // In Oppo/Realme RFCOMM packets:
-            // bit 0 (0x01): this phone (connected to app)
-            // bit 1 (0x02): main audio device
-            // bit 2 (0x04): playing / audio active
-            // bits 3-5: device type (0 = phone, 1 = pc, 2 = tablet)
             this.isCurrent = (activeState & 0x01) != 0;
             this.isPriority = (activeState & 0x02) != 0;
-            this.isAudioActive = (activeState & 0x04) != 0 || (activeState & 0x02) != 0;
+            // bit 0 (0x01) is active audio stream in realme Buds Air 8 telemetry
+            this.isAudioActive = (activeState & 0x01) != 0 || (activeState & 0x04) != 0 || (activeState & 0x02) != 0;
             int typeFromFlags = (activeState >> 3) & 0x07;
             this.deviceType = (typeFromFlags > 0) ? typeFromFlags : deviceType;
             this.isActive = isAudioActive;
@@ -256,6 +252,32 @@ public class RealmeProtocol {
                 devList.add(new DeviceInfo(name, mac, (flags >> 3) & 0x07, connState, flags));
             }
             if (listener != null) {
+                listener.onConnectedDevicesUpdate(devList);
+            }
+        } else if (opcode == 0x04 && payload.length >= 3 && (payload[0] & 0xFF) == 0xF2) {
+            // Real-time audio routing update push: F2 <count> [MAC 6B] [ID 1B] [Active 1B] [NameLen 1B] [Name] ...
+            int devCount = payload[1] & 0xFF;
+            int idx = 2;
+            java.util.List<DeviceInfo> devList = new java.util.ArrayList<>();
+            while (devList.size() < devCount && idx + 9 <= payload.length) {
+                byte[] mac = new byte[6];
+                System.arraycopy(payload, idx, mac, 0, 6);
+                idx += 6;
+                int devType = payload[idx++] & 0xFF;
+                int isActive = payload[idx++] & 0xFF;
+                int nameLen = payload[idx++] & 0xFF;
+                String name = "";
+                if (nameLen > 0 && idx + nameLen <= payload.length) {
+                    try {
+                        name = new String(payload, idx, nameLen, "UTF-8").trim().replace("\0", "");
+                    } catch (Exception ignored) {
+                        name = new String(payload, idx, nameLen).trim().replace("\0", "");
+                    }
+                    idx += nameLen;
+                }
+                devList.add(new DeviceInfo(name, mac, (devType >> 3) & 0x07, 0x02, isActive));
+            }
+            if (listener != null && !devList.isEmpty()) {
                 listener.onConnectedDevicesUpdate(devList);
             }
         } else if (opcode == 0x04 && (action == 0x02 || action == 0x05 || (action & 0xF0) == 0x80) && payload.length >= 2) {
