@@ -779,7 +779,29 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
 
+    public void disconnectThisPhone(RealmeProtocol.DeviceInfo dev) {
+        if (dev != null) {
+            Log.d(TAG, "disconnectThisPhone: Instructing earbuds to disconnect local phone (" + dev.getMacString() + ")");
+            disconnectDevice(dev);
+            mMainHandler.postDelayed(() -> {
+                Log.d(TAG, "disconnectThisPhone: Closing local SPP session after earbud disconnect command");
+                disconnectInternal();
+                onDisconnected();
+            }, 600);
+        } else {
+            disconnectThisPhone();
+        }
+    }
+
     public void disconnectThisPhone() {
+        if (mState.devices != null) {
+            for (RealmeProtocol.DeviceInfo d : mState.devices) {
+                if (isThisPhone(d)) {
+                    disconnectThisPhone(d);
+                    return;
+                }
+            }
+        }
         Log.d(TAG, "disconnectThisPhone: Disconnecting local SPP session");
         disconnectInternal();
         onDisconnected();

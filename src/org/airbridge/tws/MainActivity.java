@@ -1405,14 +1405,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 rowDisconnectLocal.setOnClickListener(v -> {
                     dialog.dismiss();
                     if (mService != null) {
-                        mService.disconnectThisPhone();
+                        mService.disconnectThisPhone(dev);
                     }
-                    Toast.makeText(this, "Opening Bluetooth Settings to disconnect...", Toast.LENGTH_SHORT).show();
-                    try {
-                        startActivity(new Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS));
-                    } catch (Exception e) {
-                        Toast.makeText(this, "Could not open Bluetooth Settings", Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(this, "Disconnecting earbuds from " + displayName + "...", Toast.LENGTH_SHORT).show();
                 });
             }
 
