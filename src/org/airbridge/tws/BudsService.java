@@ -87,6 +87,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     private long mLastNotifUpdate = 0;
     private final Runnable mThrottledNotifRunnable = this::performUpdateNotification;
     private boolean mShowNotification = true;
+    private int mSavedAncBeforeSingleWear = -1;
 
     public boolean isShowNotification() {
         return mShowNotification;
@@ -141,6 +142,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         mState.gestureRightDouble = gPrefs.getInt("gesture_rd", 1);
         mState.gestureRightTriple = gPrefs.getInt("gesture_rt", 6);
         mState.gestureRightHold = gPrefs.getInt("gesture_rh", 8);
+        mState.smartWearAutoTrans = gPrefs.getBoolean("smart_wear_trans", false);
 
         createNotificationChannel();
 
@@ -466,6 +468,8 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             sendCmd(RealmeProtocol.OP_ANC_STATE, 0x01, new byte[]{0x02, 0x01});
             Thread.sleep(80);
             sendCmd(RealmeProtocol.OP_KEY_FUNCTION_QUERY, 0x01, new byte[0]);
+            Thread.sleep(80);
+            sendCmd(RealmeProtocol.OP_PROMPT_VOL_QUERY, 0x01, new byte[0]);
             mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
         } catch (Exception e) {
             Log.e(TAG, "Error sending queries", e);
@@ -540,6 +544,10 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         // Optimistically update state
         updateFeatureState(featureId, value);
         notifyStateChanged();
+    }
+
+    public void setGameMode(boolean enabled) {
+        setFeature(RealmeProtocol.FEAT_GAME_MODE, enabled ? 1 : 0);
     }
 
     public void setDynamicBass(boolean enabled, int level) {
@@ -912,11 +920,54 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         notifyStateChanged();
     }
 
+    public void setPromptVolume(int volume) {
+        Log.d(TAG, "setPromptVolume: " + volume);
+        sendCmd(RealmeProtocol.OP_PROMPT_VOL_SET, 0x04, new byte[]{(byte) volume});
+        mState.promptVolume = volume;
+        notifyStateChanged();
+    }
+
+    public void queryPromptVolume() {
+        sendCmd(RealmeProtocol.OP_PROMPT_VOL_QUERY, 0x01, new byte[0]);
+    }
+
+    public void setSmartWearAutoTrans(boolean enabled) {
+        mState.smartWearAutoTrans = enabled;
+        getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("smart_wear_trans", enabled)
+            .apply();
+        notifyStateChanged();
+    }
+
     @Override
     public void onWearStatusUpdate(int leftStatus, int rightStatus, int boxStatus) {
+        boolean prevBothWorn = (mState.wearLeft == 1 && mState.wearRight == 1);
+        boolean nowSingleWorn = ((leftStatus == 1) ^ (rightStatus == 1));
+        boolean nowBothWorn = (leftStatus == 1 && rightStatus == 1);
+
         mState.wearLeft = leftStatus;
         mState.wearRight = rightStatus;
         mState.wearCase = boxStatus;
+
+        if (mState.smartWearAutoTrans) {
+            if (prevBothWorn && nowSingleWorn) {
+                // One earbud taken out: switch remaining earbud to Transparency
+                if (mSavedAncBeforeSingleWear == -1) {
+                    mSavedAncBeforeSingleWear = mState.ancMode;
+                }
+                if (mState.ancMode != 2) {
+                    Log.d(TAG, "Smart Wear: 1 bud removed, auto switching to Transparency (saved ANC=" + mSavedAncBeforeSingleWear + ")");
+                    setAncMode(2);
+                }
+            } else if (nowBothWorn && mSavedAncBeforeSingleWear != -1) {
+                // Both earbuds worn again: restore previous ANC mode
+                Log.d(TAG, "Smart Wear: both buds worn again, restoring ANC mode=" + mSavedAncBeforeSingleWear);
+                setAncMode(mSavedAncBeforeSingleWear);
+                mSavedAncBeforeSingleWear = -1;
+            }
+        }
+
         notifyStateChanged();
     }
 
@@ -927,7 +978,11 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     @Override
-    public void onPromptVolumeUpdate(int volumeLevel) {}
+    public void onPromptVolumeUpdate(int volumeLevel) {
+        Log.d(TAG, "onPromptVolumeUpdate: " + volumeLevel);
+        mState.promptVolume = volumeLevel;
+        notifyStateChanged();
+    }
 
     @Override
     public void onFitTestResult(int leftStatus, int rightStatus) {

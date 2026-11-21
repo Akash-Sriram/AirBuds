@@ -128,6 +128,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
     private Switch swShowNotification;
     private Switch swSuppressGoogle;
     private TextView tvSuppressGoogleDesc;
+    private Switch swSmartWearTrans;
+    private View rowPromptVolume;
+    private TextView tvPromptVolVal;
     private Button btnReconnect;
 
     private TextView tvHeroCodec;
@@ -484,6 +487,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
         swGameMode = findViewById(R.id.sw_game_mode);
         swInEar = findViewById(R.id.sw_in_ear);
+        swSmartWearTrans = findViewById(R.id.sw_smart_wear_trans);
+        rowPromptVolume = findViewById(R.id.row_prompt_volume);
+        tvPromptVolVal = findViewById(R.id.tv_prompt_vol_val);
         swHelmetMode = findViewById(R.id.sw_helmet_mode);
         swHelmetModeGestures = findViewById(R.id.sw_helmet_mode_gestures);
         swWindNoise = findViewById(R.id.sw_wind_noise);
@@ -754,6 +760,10 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (swInEar != null) swInEar.setOnCheckedChangeListener((btn, checked) -> {
             if (btn.isPressed() && mService != null) mService.setFeature(RealmeProtocol.FEAT_IN_EAR, checked ? 1 : 0);
         });
+        if (swSmartWearTrans != null) swSmartWearTrans.setOnCheckedChangeListener((btn, checked) -> {
+            if (btn.isPressed() && mService != null) mService.setSmartWearAutoTrans(checked);
+        });
+        if (rowPromptVolume != null) rowPromptVolume.setOnClickListener(v -> showPromptVolumeDialog());
         if (swGameMode != null) swGameMode.setOnCheckedChangeListener((btn, checked) -> {
             if (btn.isPressed() && mService != null) mService.setFeature(RealmeProtocol.FEAT_GAME_MODE, checked ? 1 : 0);
         });
@@ -1055,6 +1065,10 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (swGoldenSound != null) swGoldenSound.setChecked(state.goldenSound);
         if (swMultiDevice != null) swMultiDevice.setChecked(state.dualDeviceEnabled);
         if (swShowNotification != null && mService != null) swShowNotification.setChecked(mService.isShowNotification());
+        if (swSmartWearTrans != null && !swSmartWearTrans.isPressed()) {
+            swSmartWearTrans.setChecked(state.smartWearAutoTrans);
+        }
+        updatePromptVolText(state.promptVolume);
 
         // Multipoint Device List
         renderDeviceList(state.devices);
@@ -1218,6 +1232,36 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (rowMild != null) rowMild.setOnClickListener(v -> { if (mService != null) mService.setAncLevel(0x02); dialog.dismiss(); });
 
         dialog.show();
+    }
+
+    private void showPromptVolumeDialog() {
+        if (mService == null) return;
+        String[] options = new String[]{"Mute (Silent)", "Low", "Medium", "High"};
+        int currentVol = mService.getState().promptVolume;
+        int checkedItem = (currentVol >= 0 && currentVol <= 3) ? currentVol : 2; // Default Medium
+
+        new AlertDialog.Builder(this)
+            .setTitle("Voice Prompt Volume")
+            .setSingleChoiceItems(options, checkedItem, (d, which) -> {
+                if (mService != null) {
+                    mService.setPromptVolume(which);
+                }
+                updatePromptVolText(which);
+                d.dismiss();
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    private void updatePromptVolText(int vol) {
+        if (tvPromptVolVal == null) return;
+        switch (vol) {
+            case 0: tvPromptVolVal.setText("Mute"); break;
+            case 1: tvPromptVolVal.setText("Low"); break;
+            case 2: tvPromptVolVal.setText("Medium"); break;
+            case 3: tvPromptVolVal.setText("High"); break;
+            default: tvPromptVolVal.setText("Default"); break;
+        }
     }
 
     private void renderDeviceList(List<RealmeProtocol.DeviceInfo> devices) {
@@ -1478,10 +1522,13 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
         View llLocalSection = view.findViewById(R.id.ll_dialog_local_section);
         View rowTakeoverAudio = view.findViewById(R.id.row_action_takeover_audio);
+        View rowPreferLocal = view.findViewById(R.id.row_action_prefer_local);
+        View rowAutoRouting = view.findViewById(R.id.row_action_auto_routing);
         View rowDisconnectLocal = view.findViewById(R.id.row_action_disconnect_local);
         View rowUnpairLocal = view.findViewById(R.id.row_action_unpair_local);
 
         View llRemoteActions = view.findViewById(R.id.ll_dialog_remote_actions);
+        View rowPreferRemote = view.findViewById(R.id.row_action_prefer_remote);
         View rowDisconnectRemote = view.findViewById(R.id.row_action_disconnect_remote);
         View rowConnectRemote = view.findViewById(R.id.row_action_connect_remote);
         View rowRemoveRemote = view.findViewById(R.id.row_action_remove_remote);
@@ -1517,6 +1564,26 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 });
             }
 
+            if (rowPreferLocal != null) {
+                rowPreferLocal.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    if (mService != null) {
+                        mService.setPreferredDevice(dev.getMacString(), false);
+                    }
+                    Toast.makeText(this, "Audio priority locked to This Phone", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            if (rowAutoRouting != null) {
+                rowAutoRouting.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    if (mService != null) {
+                        mService.setPreferredDevice(null, true);
+                    }
+                    Toast.makeText(this, "Auto audio routing enabled", Toast.LENGTH_SHORT).show();
+                });
+            }
+
             if (rowDisconnectLocal != null) {
                 rowDisconnectLocal.setOnClickListener(v -> {
                     dialog.dismiss();
@@ -1536,6 +1603,17 @@ public class MainActivity extends Activity implements BudsState.Listener {
         } else {
             if (llLocalSection != null) llLocalSection.setVisibility(View.GONE);
             if (llRemoteActions != null) llRemoteActions.setVisibility(View.VISIBLE);
+
+            if (rowPreferRemote != null) {
+                rowPreferRemote.setVisibility(dev.isConnected ? View.VISIBLE : View.GONE);
+                rowPreferRemote.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    if (mService != null) {
+                        mService.setPreferredDevice(dev.getMacString(), false);
+                    }
+                    Toast.makeText(this, "Audio priority locked to " + displayName, Toast.LENGTH_SHORT).show();
+                });
+            }
 
             if (dev.isConnected) {
                 if (rowDisconnectRemote != null) rowDisconnectRemote.setVisibility(View.VISIBLE);
