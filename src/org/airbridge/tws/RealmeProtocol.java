@@ -75,7 +75,7 @@ public class RealmeProtocol {
             this.isCurrent = (activeState & 0x01) != 0;
             this.isPriority = (activeState & 0x02) != 0;
             // bit 0 (0x01) is active audio stream in realme Buds Air 8 telemetry
-            this.isAudioActive = (activeState & 0x01) != 0 || (activeState & 0x04) != 0 || (activeState & 0x02) != 0;
+            this.isAudioActive = (activeState & 0x01) != 0;
             int typeFromFlags = (activeState >> 3) & 0x07;
             this.deviceType = (typeFromFlags > 0) ? typeFromFlags : deviceType;
             this.isActive = isAudioActive;
@@ -113,6 +113,7 @@ public class RealmeProtocol {
         void onEqPresetUpdate(int preset); // 0 = Original, 1 = Deep Bass, 2 = Serenade, 3 = Clear Bass
         void onFeatureUpdate(int featureId, int value);
         void onConnectedDevicesUpdate(java.util.List<DeviceInfo> devices);
+        void onAudioRoutingUpdate(java.util.List<DeviceInfo> routingDevices);
         void onPreferredDeviceUpdate(String mac, boolean isAuto);
         void onDeviceRoutingChanged();
         void onFirmwareUpdate(String version); // parsed from 0x8105
@@ -275,10 +276,10 @@ public class RealmeProtocol {
                     }
                     idx += nameLen;
                 }
-                devList.add(new DeviceInfo(name, mac, (devType >> 3) & 0x07, 0x02, isActive));
+                devList.add(new DeviceInfo(name, mac, (devType >> 3) & 0x07, 0, isActive));
             }
             if (listener != null && !devList.isEmpty()) {
-                listener.onConnectedDevicesUpdate(devList);
+                listener.onAudioRoutingUpdate(devList);
             }
         } else if (opcode == 0x04 && (action == 0x02 || action == 0x05 || (action & 0xF0) == 0x80) && payload.length >= 2) {
             int subType = payload[0] & 0xFF;

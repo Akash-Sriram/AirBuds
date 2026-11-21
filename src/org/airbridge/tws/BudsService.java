@@ -383,6 +383,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     private void onDisconnected() {
+        stopDeviceQueryLoop();
         disconnectInternal();
         mState.connState = BudsState.ConnState.DISCONNECTED;
         mState.statusText = "○ Disconnected";
@@ -455,8 +456,10 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             Thread.sleep(80);
             sendCmd(RealmeProtocol.OP_PERSONAL_ANC_STORED, 0x01, new byte[0]);
             Thread.sleep(80);
-            // Register notifications: Battery, Wear, ANC, Fit, Game Mode (0x05), Multi-Connect (0x06), Spatial (0x08), Personal ANC (0x0B), Dual Conn (0x0D), Spatial State (0x0F), Codec (0x10)
-            sendCmd(RealmeProtocol.OP_REGISTER_NOTIFY, 0x02, new byte[]{ 11, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x08, 0x0B, 0x0D, 0x0F, 0x10 });
+            // Register notifications: Battery, Wear, ANC, Fit, Game Mode (0x05), Multi-Connect (0x06), Spatial (0x08), Personal ANC (0x0B), Dual Conn (0x0D), Spatial State (0x0F), Codec (0x10), Action (0xF1), Routing (0xF2), Extra (0xF3)
+            sendCmd(RealmeProtocol.OP_REGISTER_NOTIFY, 0x02, new byte[]{
+                14, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x08, 0x0B, 0x0D, 0x0F, 0x10, (byte) 0xF1, (byte) 0xF2, (byte) 0xF3
+            });
             Thread.sleep(80);
             sendCmd(RealmeProtocol.OP_FIRMWARE, 0x01, new byte[0]);
             Thread.sleep(80);
@@ -644,9 +647,20 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         public void run() {
             if (mRunning && mState.connState == BudsState.ConnState.CONNECTED) {
                 queryConnectedDevices();
+                mMainHandler.postDelayed(this, 1200);
             }
         }
     };
+
+    public void startDeviceQueryLoop() {
+        mMainHandler.removeCallbacks(mDeviceQueryRunnable);
+        queryConnectedDevices();
+        mMainHandler.postDelayed(mDeviceQueryRunnable, 1200);
+    }
+
+    public void stopDeviceQueryLoop() {
+        mMainHandler.removeCallbacks(mDeviceQueryRunnable);
+    }
 
     public void queryConnectedDevices() {
         sendCmd(RealmeProtocol.OP_MULTI_CONNECT_INFO, 0x01, new byte[0]); // Cmd 0x0112: Query Multi-Connect Devices
@@ -937,6 +951,49 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         mState.preferredDeviceMac = mac;
         mState.isPreferredAuto = isAuto;
         notifyStateChanged();
+    }
+
+    @Override
+    public void onAudioRoutingUpdate(List<RealmeProtocol.DeviceInfo> routingDevices) {
+        if (routingDevices == null || routingDevices.isEmpty()) return;
+        boolean changed = false;
+        if (mState.devices != null) {
+            List<RealmeProtocol.DeviceInfo> updated = new ArrayList<>();
+            for (RealmeProtocol.DeviceInfo existing : mState.devices) {
+                RealmeProtocol.DeviceInfo match = null;
+                for (RealmeProtocol.DeviceInfo rd : routingDevices) {
+                    if (macsEqual(existing.mac, rd.mac)) {
+                        match = rd;
+                        break;
+                    }
+                }
+                if (match != null) {
+                    boolean wasActive = existing.isAudioActive;
+                    boolean nowActive = match.isAudioActive;
+                    if (wasActive != nowActive || existing.activeState != match.activeState) {
+                        changed = true;
+                    }
+                    updated.add(new RealmeProtocol.DeviceInfo(
+                        existing.name, existing.mac, existing.deviceType, existing.connState, match.activeState
+                    ));
+                } else {
+                    updated.add(existing);
+                }
+            }
+            if (changed) {
+                mState.devices = updated;
+                notifyStateChanged();
+            }
+        }
+        mMainHandler.post(this::queryConnectedDevices);
+    }
+
+    private boolean macsEqual(byte[] a, byte[] b) {
+        if (a == null || b == null || a.length < 6 || b.length < 6) return false;
+        for (int i = 0; i < 6; i++) {
+            if (a[i] != b[i]) return false;
+        }
+        return true;
     }
 
     @Override
@@ -1287,6 +1344,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        stopDeviceQueryLoop();
         mMainHandler.removeCallbacks(mThrottledNotifRunnable);
         if (mIsForeground) {
             try {

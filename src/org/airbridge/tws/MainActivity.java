@@ -218,6 +218,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
             mService = binder.getService();
             mBound = true;
             mService.addListener(MainActivity.this);
+            if (mCurrentForm == FORM_DEVICES) {
+                mService.startDeviceQueryLoop();
+            }
             renderState(mService.getState());
         }
 
@@ -295,6 +298,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
             if (mService.getState().connState != BudsState.ConnState.CONNECTED && mService.hasBondedBuds()) {
                 mService.reconnect();
             }
+            if (mCurrentForm == FORM_DEVICES) {
+                mService.startDeviceQueryLoop();
+            }
             renderState(mService.getState());
         }
     }
@@ -302,6 +308,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
     @Override
     protected void onPause() {
         super.onPause();
+        if (mService != null) {
+            mService.stopDeviceQueryLoop();
+        }
     }
 
     private void updateNotificationListenerUi() {
@@ -350,6 +359,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (llFormGestures != null) llFormGestures.setVisibility(formId == FORM_GESTURES ? View.VISIBLE : View.GONE);
         if (formId == FORM_DEVICES && mService != null) {
             renderDeviceList(mService.getState().devices);
+            mService.startDeviceQueryLoop();
+        } else if (mService != null) {
+            mService.stopDeviceQueryLoop();
         }
         if (formId == FORM_GESTURES && mService != null) {
             updateGestureSpinnersFromState(mService.getState());
@@ -1260,7 +1272,12 @@ public class MainActivity extends Activity implements BudsState.Listener {
             int padV = (int) (4 * getResources().getDisplayMetrics().density);
             tvDevStatus.setPadding(padH, padV, padH, padV);
 
-            boolean isPlaying = isLocal ? isLocalAudioPlaying : (dev.isConnected && dev.isAudioActive);
+            boolean isPlaying = false;
+            if (isLocalAudioPlaying) {
+                isPlaying = isLocal;
+            } else if (dev.isConnected && dev.isAudioActive) {
+                isPlaying = true;
+            }
 
             if (isPlaying) {
                 tvDevStatus.setText("● Active Audio");
@@ -1387,7 +1404,12 @@ public class MainActivity extends Activity implements BudsState.Listener {
         tvName.setText(displayName);
         tvMac.setText(dev.getMacString());
 
-        boolean isPlaying = isLocal ? isLocalAudioPlaying : (dev.isConnected && dev.isAudioActive);
+        boolean isPlaying = false;
+        if (isLocalAudioPlaying) {
+            isPlaying = isLocal;
+        } else if (dev.isConnected && dev.isAudioActive) {
+            isPlaying = true;
+        }
         if (isPlaying) {
             tvBadge.setText("● Active Audio");
             tvBadge.setTextColor(getColor(R.color.success));
