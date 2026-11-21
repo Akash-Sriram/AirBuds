@@ -474,7 +474,11 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     // ------------------------------------------------------------------------
 
     public synchronized void sendCmd(int opcode, int action, byte[] payload) {
-        if (!mRunning || mOutStream == null) return;
+        if (!mRunning || mOutStream == null) {
+            Log.w(TAG, String.format("sendCmd: Dropped cmd 0x%02X%02X - socket not connected (running=%b, outStream=%s)",
+                    action, opcode, mRunning, mOutStream));
+            return;
+        }
         byte[] packet = RealmeProtocol.makePacket(opcode, action, payload);
         logPacket("TX", RealmeProtocol.toHex(packet, packet.length));
         try {
@@ -660,8 +664,106 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             }
         } catch (Exception ignored) {}
     }
+    public void disconnectDevice(RealmeProtocol.DeviceInfo dev) {
+        if (dev == null || dev.mac == null || dev.mac.length < 6) return;
+        Log.d(TAG, "disconnectDevice: Disconnecting " + dev.name + " (" + dev.getMacString() + ")");
+
+        if (!mRunning || mOutStream == null) {
+            Log.w(TAG, "disconnectDevice: SPP socket is not connected! Auto-reconnecting and will retry in 1500ms...");
+            reconnect();
+            mMainHandler.postDelayed(() -> disconnectDevice(dev), 1500);
+            return;
+        }
+
+        // Wire MAC (Little-Endian: matches firmware internal device table)
+        byte[] wireMac = new byte[6];
+        System.arraycopy(dev.mac, 0, wireMac, 0, 6);
+
+        // Primary: 0x040B (Verified working on realme Buds Air 8 — status 0x00 ACK)
+        byte[] p0b = new byte[7];
+        p0b[0] = 0x02; // Action 0x02: Disconnect
+        System.arraycopy(wireMac, 0, p0b, 1, 6);
+        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, p0b);
+
+        // Secondary fallback: 0x0429 for firmware variants that use the newer opcode
+        mMainHandler.postDelayed(() -> {
+            sendCmd(RealmeProtocol.OP_OPERATE_MULTI_DEVICE, 0x04, p0b);
+        }, 200);
+
+        mMainHandler.postDelayed(this::queryConnectedDevices, 600);
+        mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
+    }
+
+    public void connectDevice(RealmeProtocol.DeviceInfo dev) {
+        if (dev == null || dev.mac == null || dev.mac.length < 6) return;
+        Log.d(TAG, "connectDevice: Connecting " + dev.name + " (" + dev.getMacString() + ")");
+
+        if (!mRunning || mOutStream == null) {
+            reconnect();
+            mMainHandler.postDelayed(() -> connectDevice(dev), 1500);
+            return;
+        }
+
+        byte[] wireMac = new byte[6];
+        System.arraycopy(dev.mac, 0, wireMac, 0, 6);
+
+        // Primary: 0x040B
+        byte[] p0b = new byte[7];
+        p0b[0] = 0x01; // Action 0x01: Connect
+        System.arraycopy(wireMac, 0, p0b, 1, 6);
+        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, p0b);
+
+        // Secondary fallback: 0x0429
+        mMainHandler.postDelayed(() -> {
+            sendCmd(RealmeProtocol.OP_OPERATE_MULTI_DEVICE, 0x04, p0b);
+        }, 200);
+
+        mMainHandler.postDelayed(this::queryConnectedDevices, 600);
+        mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
+    }
+
+    public void removeDevice(RealmeProtocol.DeviceInfo dev) {
+        if (dev == null || dev.mac == null || dev.mac.length < 6) return;
+        Log.d(TAG, "removeDevice: Removing " + dev.name + " (" + dev.getMacString() + ") from earbud memory");
+
+        if (!mRunning || mOutStream == null) {
+            reconnect();
+            mMainHandler.postDelayed(() -> removeDevice(dev), 1500);
+            return;
+        }
+
+        byte[] wireMac = new byte[6];
+        System.arraycopy(dev.mac, 0, wireMac, 0, 6);
+
+        // Primary: 0x040B
+        byte[] p0b = new byte[7];
+        p0b[0] = 0x03; // Action 0x03: Remove / Unpair
+        System.arraycopy(wireMac, 0, p0b, 1, 6);
+        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, p0b);
+
+        // Secondary fallback: 0x0429
+        mMainHandler.postDelayed(() -> {
+            sendCmd(RealmeProtocol.OP_OPERATE_MULTI_DEVICE, 0x04, p0b);
+        }, 200);
+
+        mMainHandler.postDelayed(this::queryConnectedDevices, 600);
+        mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
+    }
+
+
+    public boolean isThisPhone(RealmeProtocol.DeviceInfo dev) {
+        if (dev == null) return false;
+        try {
+            String localMac = Settings.Secure.getString(getContentResolver(), "bluetooth_address");
+            if (localMac != null && !localMac.isEmpty() && !localMac.equalsIgnoreCase("02:00:00:00:00:00")) {
+                if (localMac.equalsIgnoreCase(dev.getMacString())) return true;
+            }
+        } catch (Exception ignored) {}
+        return isThisPhone(dev.name);
+    }
+
     public boolean isThisPhone(String devName) {
-        if (devName == null) return false;
+        if (devName == null || devName.trim().isEmpty()) return false;
         String curDevName = Settings.Global.getString(getContentResolver(), "device_name");
         String btName = null;
         try {
@@ -675,6 +777,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         if (btName != null && devName.equalsIgnoreCase(btName)) return true;
         return devName.equalsIgnoreCase(Build.MODEL);
     }
+
 
     public void disconnectThisPhone() {
         Log.d(TAG, "disconnectThisPhone: Disconnecting local SPP session");

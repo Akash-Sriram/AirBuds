@@ -27,8 +27,8 @@ public class RealmeProtocol {
     public static final int OP_PERSONAL_ANC = 0x12; // Cmd 0x0412
     public static final int OP_PERSONAL_ANC_STORED = 0x1A; // Cmd 0x011A
     public static final int OP_MULTI_CONNECT_INFO = 0x12; // Cmd 0x0112 (action 0x01 / 0x81)
-    public static final int OP_OPERATE_MULTI_CONNECT = 0x0B; // Cmd 0x040B (legacy operate multi-connect)
-    public static final int OP_OPERATE_MULTI_DEVICE = 0x29; // Cmd 0x0429 (standard operate multi-device)
+    public static final int OP_OPERATE_MULTI_CONNECT = 0x0B; // Cmd 0x040B — verified realme multi-device operation (01=connect, 02=disconnect, 03=unpair)
+    public static final int OP_OPERATE_MULTI_DEVICE = 0x29; // Cmd 0x0429 — secondary multi-device operation fallback
 
     public static final int OP_FIRMWARE = 0x05; // Cmd 0x0105 — firmware version query
     public static final int OP_KEY_FUNCTION = 0x08; // Legacy alias for OP_KEY_FUNCTION_QUERY
@@ -458,8 +458,11 @@ public class RealmeProtocol {
                         listener.onPreferredDeviceUpdate(macStr, isAuto);
                     }
                 }
-            } else if (opcode == OP_OPERATE_MULTI_DEVICE) {
-                // 0x8429 response to 0x0429 multi-device operation
+            } else if (opcode == OP_OPERATE_MULTI_DEVICE || opcode == 0x0B || opcode == 0x08) {
+                // 0x8429 / 0x840B / 0x8408 response to multi-device operation
+                // payload[0]: 0x00=success, 0x01=rejected/unsupported, 0x02=failure
+                int status = payload.length > 0 ? (payload[0] & 0xFF) : -1;
+                android.util.Log.d("RealmeProtocol", String.format("0x84%02X ack status=0x%02X (len=%d)", opcode, status, payload.length));
                 if (listener != null) {
                     listener.onDeviceRoutingChanged();
                 }

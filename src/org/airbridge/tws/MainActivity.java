@@ -292,6 +292,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
         super.onResume();
         updateNotificationListenerUi();
         if (mBound && mService != null) {
+            if (mService.getState().connState != BudsState.ConnState.CONNECTED && mService.hasBondedBuds()) {
+                mService.reconnect();
+            }
             renderState(mService.getState());
         }
     }
@@ -1206,7 +1209,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
         for (int i = 0; i < devices.size(); i++) {
             RealmeProtocol.DeviceInfo dev = devices.get(i);
-            boolean isLocal = isThisPhone(dev.name) || dev.isCurrent;
+            boolean isLocal = isThisPhone(dev);
 
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -1315,8 +1318,19 @@ public class MainActivity extends Activity implements BudsState.Listener {
         return R.drawable.ic_nav_devices;
     }
 
+    private boolean isThisPhone(RealmeProtocol.DeviceInfo dev) {
+        if (dev == null) return false;
+        try {
+            String localMac = android.provider.Settings.Secure.getString(getContentResolver(), "bluetooth_address");
+            if (localMac != null && !localMac.isEmpty() && !localMac.equalsIgnoreCase("02:00:00:00:00:00")) {
+                if (localMac.equalsIgnoreCase(dev.getMacString())) return true;
+            }
+        } catch (Exception ignored) {}
+        return isThisPhone(dev.name);
+    }
+
     private boolean isThisPhone(String devName) {
-        if (devName == null) return false;
+        if (devName == null || devName.trim().isEmpty()) return false;
         String curDevName = android.provider.Settings.Global.getString(getContentResolver(), "device_name");
         String btName = null;
         try {
@@ -1333,7 +1347,8 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
     private void onDeviceRowClicked(RealmeProtocol.DeviceInfo dev) {
         if (dev == null || mService == null) return;
-        boolean isLocal = isThisPhone(dev.name) || dev.isCurrent;
+        boolean isLocal = isThisPhone(dev);
+        Log.d("AirBudsUI", "onDeviceRowClicked: tapped dev=" + dev.name + " (" + dev.getMacString() + ") -> isLocal=" + isLocal + ", isCurrent=" + dev.isCurrent);
         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         boolean isLocalAudioPlaying = (mService != null && mService.getState().isLocalA2dpPlaying)
             || (am != null && (am.isMusicActive() || am.getMode() == AudioManager.MODE_IN_CALL || am.getMode() == AudioManager.MODE_IN_COMMUNICATION));
@@ -1358,6 +1373,11 @@ public class MainActivity extends Activity implements BudsState.Listener {
         View rowDisconnectLocal = view.findViewById(R.id.row_action_disconnect_local);
         View rowUnpairLocal = view.findViewById(R.id.row_action_unpair_local);
 
+        View llRemoteActions = view.findViewById(R.id.ll_dialog_remote_actions);
+        View rowDisconnectRemote = view.findViewById(R.id.row_action_disconnect_remote);
+        View rowConnectRemote = view.findViewById(R.id.row_action_connect_remote);
+        View rowRemoveRemote = view.findViewById(R.id.row_action_remove_remote);
+
         View llRemoteSection = view.findViewById(R.id.ll_dialog_remote_section);
         TextView tvRemoteTitle = view.findViewById(R.id.tv_dialog_remote_title);
         TextView tvRemoteBody = view.findViewById(R.id.tv_dialog_remote_body);
@@ -1378,6 +1398,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
             }
 
             if (llLocalSection != null) llLocalSection.setVisibility(View.VISIBLE);
+            if (llRemoteActions != null) llRemoteActions.setVisibility(View.GONE);
             if (llRemoteSection != null) llRemoteSection.setVisibility(View.GONE);
 
             if (rowDisconnectLocal != null) {
@@ -1403,27 +1424,59 @@ public class MainActivity extends Activity implements BudsState.Listener {
             }
         } else {
             if (llLocalSection != null) llLocalSection.setVisibility(View.GONE);
+            if (llRemoteActions != null) llRemoteActions.setVisibility(View.VISIBLE);
             if (llRemoteSection != null) llRemoteSection.setVisibility(View.VISIBLE);
 
             if (dev.isConnected) {
                 tvBadge.setText("Connected");
                 tvBadge.setTextColor(getColor(R.color.info));
+                if (rowDisconnectRemote != null) rowDisconnectRemote.setVisibility(View.VISIBLE);
+                if (rowConnectRemote != null) rowConnectRemote.setVisibility(View.GONE);
                 if (tvRemoteTitle != null) tvRemoteTitle.setText("MULTIPOINT AUDIO MANAGEMENT");
                 if (tvRemoteBody != null) {
-                    tvRemoteBody.setText("realme Buds Air 8 manages dual-device connections automatically at the hardware level.\n\n• Audio Switching: Start audio playback on " + displayName + " and the earbuds will switch to it automatically.\n• Disconnection: To disconnect this device, turn off its Bluetooth or disconnect it from its Bluetooth menu. (Remote disconnection commands are locked in earbud firmware).");
+                    tvRemoteBody.setText("realme Buds Air 8 manages dual-device connections automatically at the hardware level.\n\n• Disconnection: Tap 'Disconnect Device' to disconnect " + displayName + " from the earbuds without unpairing.\n• Audio Switching: Start audio playback on any connected device and the earbuds switch automatically.");
                 }
             } else {
                 tvBadge.setText("Not connected");
                 tvBadge.setTextColor(getColor(R.color.offline));
+                if (rowDisconnectRemote != null) rowDisconnectRemote.setVisibility(View.GONE);
+                if (rowConnectRemote != null) rowConnectRemote.setVisibility(View.VISIBLE);
                 if (tvRemoteTitle != null) tvRemoteTitle.setText("PAIRED DEVICE MEMORY");
                 if (tvRemoteBody != null) {
-                    tvRemoteBody.setText(displayName + " is stored in the earbuds' paired memory (up to 5 devices).\n\n• Reconnecting: Select the earbuds in " + displayName + "'s Bluetooth menu to reconnect.\n• Memory Management: Earbuds automatically rotate the oldest inactive paired device when a new device connects.");
+                    tvRemoteBody.setText(displayName + " is stored in the earbuds' paired memory (up to 5 devices).\n\n• Connecting: Tap 'Connect Device' to establish a link from the earbuds to " + displayName + ".\n• Memory: Earbuds automatically rotate the oldest inactive paired device when a new device connects.");
                 }
+            }
+
+            if (rowDisconnectRemote != null) {
+                rowDisconnectRemote.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    if (mService != null) {
+                        mService.disconnectDevice(dev);
+                    }
+                    Toast.makeText(this, "Disconnecting " + displayName + " from earbuds...", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            if (rowConnectRemote != null) {
+                rowConnectRemote.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    if (mService != null) {
+                        mService.connectDevice(dev);
+                    }
+                    Toast.makeText(this, "Connecting " + displayName + " to earbuds...", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            if (rowRemoveRemote != null) {
+                rowRemoveRemote.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    showRemoveDeviceDialog(dev);
+                });
             }
         }
 
         if (btnClose != null) {
-            btnClose.setText(isLocal ? "Close" : "Got It");
+            btnClose.setText("Close");
             btnClose.setOnClickListener(v -> dialog.dismiss());
         }
 
@@ -1432,7 +1485,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
     private void showRemoveDeviceDialog(RealmeProtocol.DeviceInfo dev) {
         if (dev == null || mService == null) return;
-        boolean isLocal = isThisPhone(dev.name) || dev.isCurrent;
+        boolean isLocal = isThisPhone(dev);
         String displayName = (dev.name != null && !dev.name.trim().isEmpty()) ? dev.name.trim() : "Device";
 
         if (isLocal) {
@@ -1454,10 +1507,16 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 .show();
         } else {
             new AlertDialog.Builder(this)
-                .setTitle("Paired Device Memory")
-                .setIcon(R.drawable.ic_nav_devices)
-                .setMessage("realme Buds Air 8 stores up to 5 paired devices in its firmware memory and automatically rotates them.\n\nRemote unpairing is locked in earbud firmware. To remove this connection, select 'Forget Device' directly in " + displayName + "'s Bluetooth settings.")
-                .setPositiveButton("Got It", null)
+                .setTitle("Remove " + displayName + "?")
+                .setIcon(R.drawable.ic_delete)
+                .setMessage("Remove " + displayName + " from the earbuds' paired memory? The earbuds will forget this pairing record.")
+                .setPositiveButton("Remove", (d, which) -> {
+                    if (mService != null) {
+                        mService.removeDevice(dev);
+                    }
+                    Toast.makeText(this, "Removing " + displayName + " from earbuds...", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
                 .show();
         }
     }

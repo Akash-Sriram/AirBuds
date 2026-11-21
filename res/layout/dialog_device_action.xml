@@ -158,6 +158,141 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- REMOTE DEVICE ACTIONS (Visible for remote devices) -->
+    <LinearLayout
+        android:id="@+id/ll_dialog_remote_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Action: Disconnect Remote Device -->
+        <LinearLayout
+            android:id="@+id/row_action_disconnect_remote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_disconnect" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Disconnect Device"
+                    android:textColor="@color/text_main"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Disconnect Bluetooth link from earbuds"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Action: Connect Remote Device -->
+        <LinearLayout
+            android:id="@+id/row_action_connect_remote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_audio_switch" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Connect Device"
+                    android:textColor="@color/text_main"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Establish Bluetooth connection with earbuds"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Action: Remove Remote Device -->
+        <LinearLayout
+            android:id="@+id/row_action_remove_remote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_delete" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Remove from Earbuds"
+                    android:textColor="#E53935"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unpair device from earbuds memory"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
     <!-- REMOTE DEVICE INFO SECTION (Visible for remote devices) -->
     <LinearLayout
         android:id="@+id/ll_dialog_remote_section"
@@ -166,6 +301,7 @@
         android:orientation="vertical"
         android:background="@drawable/card_section_bg"
         android:padding="14dp"
+        android:layout_marginTop="8dp"
         android:visibility="gone">
 
         <TextView
@@ -183,7 +319,7 @@
             android:id="@+id/tv_dialog_remote_body"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="realme Buds Air 8 manages dual-device connections automatically at the hardware level.\n\n• Audio Switching: Start audio playback on any connected device and the earbuds switch automatically.\n• Disconnection: To disconnect this device, turn off its Bluetooth or disconnect from its Bluetooth menu (remote disconnection is locked in earbud firmware)."
+            android:text="realme Buds Air 8 manages multipoint audio automatically at the hardware level.\n\n• Disconnecting: You can disconnect this device to free up connection slots without forgetting the pairing.\n• Audio Switching: Earbuds automatically switch audio to any connected device when playback begins."
             android:textColor="@color/text_dim"
             android:textSize="12sp"
             android:lineSpacingExtra="3dp" />
