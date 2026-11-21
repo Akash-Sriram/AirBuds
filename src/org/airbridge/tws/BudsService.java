@@ -867,6 +867,8 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     public void startFitTest() {
+        mState.fitTestLeft = -1;
+        mState.fitTestRight = -1;
         sendCmd(RealmeProtocol.OP_FIT_TEST, 0x04, new byte[]{0x01});
     }
 
@@ -928,7 +930,12 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     public void onPromptVolumeUpdate(int volumeLevel) {}
 
     @Override
-    public void onFitTestResult(int leftStatus, int rightStatus) {}
+    public void onFitTestResult(int leftStatus, int rightStatus) {
+        Log.d(TAG, "onFitTestResult: left=" + leftStatus + ", right=" + rightStatus);
+        mState.fitTestLeft = leftStatus;
+        mState.fitTestRight = rightStatus;
+        notifyStateChanged();
+    }
 
     @Override
     public void onPersonalAncResult(int result) {}

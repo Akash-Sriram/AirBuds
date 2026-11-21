@@ -1059,6 +1059,30 @@ public class MainActivity extends Activity implements BudsState.Listener {
         // Multipoint Device List
         renderDeviceList(state.devices);
 
+        // Fit Test Result updates
+        if (mFitTestRunning && (state.fitTestLeft != -1 || state.fitTestRight != -1)) {
+            mFitTestRunning = false;
+            if (btnFitTestAct != null) {
+                btnFitTestAct.setText("Test Again");
+                btnFitTestAct.setEnabled(true);
+            }
+            if (tvFitTestStatus != null) {
+                boolean allGood = (state.fitTestLeft == 0 && state.fitTestRight == 0);
+                tvFitTestStatus.setText(allGood ? "Good acoustic seal detected in both ears!" : "Acoustic leak detected. Please adjust earbud position.");
+                tvFitTestStatus.setTextColor(getColor(allGood ? R.color.success : R.color.offline));
+            }
+            if (tvFitTestLeft != null) {
+                boolean goodL = (state.fitTestLeft == 0);
+                tvFitTestLeft.setText(goodL ? "Left: Good Seal ✓" : "Left: Adjust Earbud ⚠");
+                tvFitTestLeft.setTextColor(getColor(goodL ? R.color.success : R.color.offline));
+            }
+            if (tvFitTestRight != null) {
+                boolean goodR = (state.fitTestRight == 0);
+                tvFitTestRight.setText(goodR ? "Right: Good Seal ✓" : "Right: Adjust Earbud ⚠");
+                tvFitTestRight.setTextColor(getColor(goodR ? R.color.success : R.color.offline));
+            }
+        }
+
         // Gesture Controls State
         boolean gesturesEnabled = !state.isHelmetMode;
         if (spLeftDouble != null) spLeftDouble.setEnabled(gesturesEnabled);
