@@ -1272,22 +1272,15 @@ public class MainActivity extends Activity implements BudsState.Listener {
             int padV = (int) (4 * getResources().getDisplayMetrics().density);
             tvDevStatus.setPadding(padH, padV, padH, padV);
 
-            boolean isPlaying = false;
-            if (isLocal) {
-                isPlaying = isLocalAudioPlaying;
-            } else {
-                isPlaying = (!isLocalAudioPlaying && dev.isConnected && dev.isAudioActive);
-            }
-
-            if (isPlaying) {
+            if (isLocal && isLocalAudioPlaying) {
                 tvDevStatus.setText("● Active Audio");
                 tvDevStatus.setTextColor(getColor(R.color.success));
-                tvSub.setText((isLocal ? "This phone • " : "Connected • ") + "Playing Audio");
+                tvSub.setText("This phone • Playing Audio");
                 tvSub.setTextColor(getColor(R.color.success));
             } else if (dev.isConnected) {
                 tvDevStatus.setText("Connected");
                 tvDevStatus.setTextColor(getColor(R.color.info));
-                tvSub.setText((isLocal ? "This phone • " : "Connected • ") + "Idle");
+                tvSub.setText((isLocal ? "This phone • " : "Connected • ") + dev.getMacString());
                 tvSub.setTextColor(getColor(R.color.text_dim));
             } else {
                 tvDevStatus.setText("Not connected");
@@ -1404,17 +1397,11 @@ public class MainActivity extends Activity implements BudsState.Listener {
         tvName.setText(displayName);
         tvMac.setText(dev.getMacString());
 
-        boolean isPlaying = false;
-        if (isLocal) {
-            isPlaying = isLocalAudioPlaying;
-        } else {
-            isPlaying = (!isLocalAudioPlaying && dev.isConnected && dev.isAudioActive);
-        }
-        if (isPlaying) {
+        if (isLocal && isLocalAudioPlaying) {
             tvBadge.setText("● Active Audio");
             tvBadge.setTextColor(getColor(R.color.success));
         } else if (dev.isConnected) {
-            tvBadge.setText(isLocal ? "Connected" : "Connected (Idle)");
+            tvBadge.setText("Connected");
             tvBadge.setTextColor(getColor(R.color.info));
         } else {
             tvBadge.setText("Not connected");

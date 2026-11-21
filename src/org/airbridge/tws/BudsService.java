@@ -934,28 +934,13 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     @Override
     public void onConnectedDevicesUpdate(List<RealmeProtocol.DeviceInfo> devices) {
-        List<RealmeProtocol.DeviceInfo> merged = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         for (RealmeProtocol.DeviceInfo d : devices) {
-            boolean active = false;
-            if (mState.devices != null) {
-                for (RealmeProtocol.DeviceInfo existing : mState.devices) {
-                    if (macsEqual(existing.mac, d.mac)) {
-                        active = existing.isAudioActive;
-                        break;
-                    }
-                }
-            }
-            RealmeProtocol.DeviceInfo devWithAudio = new RealmeProtocol.DeviceInfo(
-                d.name, d.mac, d.deviceType, d.connState, d.activeState, active
-            );
-            merged.add(devWithAudio);
             sb.append(d.name).append("[conn=").append(d.isConnected)
-              .append(",cur=").append(d.isCurrent)
-              .append(",audio=").append(active).append("] ");
+              .append(",cur=").append(d.isCurrent).append("] ");
         }
         Log.d(TAG, "onConnectedDevicesUpdate: " + sb.toString());
-        mState.devices = merged;
+        mState.devices = new ArrayList<>(devices);
         notifyStateChanged();
     }
 
