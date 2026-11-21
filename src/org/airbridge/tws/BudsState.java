@@ -53,6 +53,8 @@ public class BudsState {
     public int fitTestRight = -1; // -1 = unperformed, 0 = good seal, 1 = poor seal
     public int promptVolume = -1; // 0 = Mute, 1 = Low, 2 = Medium, 3 = High
     public boolean smartWearAutoTrans = false; // Auto switch to Transparency when 1 earbud is removed
+    public int personalAncStatus = -1; // -1 = idle, 0 = testing, 1 = success, 2 = failed
+    public String batteryHealthStatus = null; // null if healthy, or warning string
 
     // EQ State
     // Preset: 0 = Original, 1 = Deep Bass, 2 = Serenade, 3 = Clear Bass, 4 = Custom1
@@ -140,6 +142,8 @@ public class BudsState {
         this.fitTestRight = other.fitTestRight;
         this.promptVolume = other.promptVolume;
         this.smartWearAutoTrans = other.smartWearAutoTrans;
+        this.personalAncStatus = other.personalAncStatus;
+        this.batteryHealthStatus = other.batteryHealthStatus;
         this.statusText = other.statusText;
     }
 }

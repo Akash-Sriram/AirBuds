@@ -884,6 +884,18 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         sendCmd(RealmeProtocol.OP_FIT_TEST, 0x04, new byte[]{0x02});
     }
 
+    public void startPersonalAnc() {
+        mState.personalAncStatus = 0;
+        sendCmd(RealmeProtocol.OP_PERSONAL_ANC, 0x04, new byte[]{0x01});
+        notifyStateChanged();
+    }
+
+    public void cancelPersonalAnc() {
+        mState.personalAncStatus = -1;
+        sendCmd(RealmeProtocol.OP_PERSONAL_ANC, 0x04, new byte[]{0x02});
+        notifyStateChanged();
+    }
+
     private void updateFeatureState(int featureId, int value) {
         boolean on = (value == 1);
         switch (featureId) {
@@ -904,11 +916,31 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     // RealmeProtocol.Listener Implementation
     // ------------------------------------------------------------------------
 
+    private boolean isWorn(int status) {
+        return status == 3 || status == 7;
+    }
+
+    private void checkBatteryHealth() {
+        if (mState.batteryLeft >= 0 && mState.batteryRight >= 0) {
+            int delta = Math.abs(mState.batteryLeft - mState.batteryRight);
+            if (mState.chargingCase && (mState.chargingLeft ^ mState.chargingRight)) {
+                String badSide = mState.chargingLeft ? "Right" : "Left";
+                mState.batteryHealthStatus = "Poor Contact: " + badSide + " earbud is not charging in case. Clean pogo pins.";
+            } else if (delta >= 15 && isWorn(mState.wearLeft) && isWorn(mState.wearRight)) {
+                String weakSide = (mState.batteryLeft < mState.batteryRight) ? "Left" : "Right";
+                mState.batteryHealthStatus = "Asymmetric Drain: " + weakSide + " bud is " + delta + "% lower than other.";
+            } else {
+                mState.batteryHealthStatus = null;
+            }
+        }
+    }
+
     @Override
     public void onBatteryUpdate(int left, int right, int box) {
         mState.batteryLeft = left;
         mState.batteryRight = right;
         mState.batteryCase = box;
+        checkBatteryHealth();
         notifyStateChanged();
     }
 
@@ -917,6 +949,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         mState.chargingLeft = (leftState == 1);
         mState.chargingRight = (rightState == 1);
         mState.chargingCase = (boxState == 1);
+        checkBatteryHealth();
         notifyStateChanged();
     }
 
@@ -942,9 +975,9 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     @Override
     public void onWearStatusUpdate(int leftStatus, int rightStatus, int boxStatus) {
-        boolean prevBothWorn = (mState.wearLeft == 1 && mState.wearRight == 1);
-        boolean nowSingleWorn = ((leftStatus == 1) ^ (rightStatus == 1));
-        boolean nowBothWorn = (leftStatus == 1 && rightStatus == 1);
+        boolean prevBothWorn = (isWorn(mState.wearLeft) && isWorn(mState.wearRight));
+        boolean nowSingleWorn = (isWorn(leftStatus) ^ isWorn(rightStatus));
+        boolean nowBothWorn = (isWorn(leftStatus) && isWorn(rightStatus));
 
         mState.wearLeft = leftStatus;
         mState.wearRight = rightStatus;
@@ -968,6 +1001,7 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             }
         }
 
+        checkBatteryHealth();
         notifyStateChanged();
     }
 
@@ -993,10 +1027,23 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     }
 
     @Override
-    public void onPersonalAncResult(int result) {}
+    public void onPersonalAncResult(int result) {
+        Log.d(TAG, "onPersonalAncResult: " + result);
+        mState.personalAncStatus = (result == 0) ? 1 : 2;
+        if (result == 0) {
+            mState.personalAncStored = true;
+        }
+        notifyStateChanged();
+    }
 
     @Override
-    public void onPersonalAncAck(int status) {}
+    public void onPersonalAncAck(int status) {
+        Log.d(TAG, "onPersonalAncAck: " + status);
+        if (status != 0 && mState.personalAncStatus == 0) {
+            mState.personalAncStatus = 2;
+            notifyStateChanged();
+        }
+    }
 
     @Override
     public void onPersonalAncStoredResult(boolean exists) {

@@ -148,6 +148,15 @@ public class MainActivity extends Activity implements BudsState.Listener {
     private Button btnFitTestAct;
     private boolean mFitTestRunning = false;
 
+    private LinearLayout llBatteryHealthBanner;
+    private TextView tvBatteryHealthStatus;
+    private Button btnPersonalAnc;
+    private TextView tvPersonalAncBadge;
+    private AlertDialog mPersonalAncDialog;
+    private TextView tvPersonalAncStatus;
+    private Button btnPersonalAncAct;
+    private boolean mPersonalAncRunning = false;
+
     private LinearLayout llCustomEqPanel;
     private EqGraphView mEqGraphView;
     private Button btnApplyCustomEq;
@@ -452,6 +461,10 @@ public class MainActivity extends Activity implements BudsState.Listener {
         btnRingBuds = findViewById(R.id.btn_ring_buds);
         swGoldenSound = findViewById(R.id.sw_golden_sound);
         btnFitTest = findViewById(R.id.btn_fit_test);
+        btnPersonalAnc = findViewById(R.id.btn_personal_anc);
+        tvPersonalAncBadge = findViewById(R.id.tv_personal_anc_badge);
+        llBatteryHealthBanner = findViewById(R.id.ll_battery_health_banner);
+        tvBatteryHealthStatus = findViewById(R.id.tv_battery_health_status);
 
         llAncBtnCancel = findViewById(R.id.ll_anc_btn_cancel);
         flAncCircleOn = findViewById(R.id.fl_anc_circle_on);
@@ -852,6 +865,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
         // Ring Buds & Fit Test
         if (btnRingBuds != null) btnRingBuds.setOnClickListener(v -> toggleRingBuds());
         if (btnFitTest != null) btnFitTest.setOnClickListener(v -> showFitTestDialog());
+        if (btnPersonalAnc != null) btnPersonalAnc.setOnClickListener(v -> showPersonalAncDialog());
 
         // Helmet / Ride Mode Switches
         android.widget.CompoundButton.OnCheckedChangeListener helmetListener = (btn, checked) -> {
@@ -1002,6 +1016,16 @@ public class MainActivity extends Activity implements BudsState.Listener {
             tvCaseWearStatus.setVisibility(View.VISIBLE);
         }
 
+        // Battery Health Banner
+        if (llBatteryHealthBanner != null && tvBatteryHealthStatus != null) {
+            if (state.batteryHealthStatus != null && !state.batteryHealthStatus.isEmpty()) {
+                llBatteryHealthBanner.setVisibility(View.VISIBLE);
+                tvBatteryHealthStatus.setText(state.batteryHealthStatus);
+            } else {
+                llBatteryHealthBanner.setVisibility(View.GONE);
+            }
+        }
+
         // ANC UI
         updateAncUi(state.ancMode);
 
@@ -1094,6 +1118,42 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 boolean goodR = (state.fitTestRight == 0);
                 tvFitTestRight.setText(goodR ? "Right: Good Seal ✓" : "Right: Adjust Earbud ⚠");
                 tvFitTestRight.setTextColor(getColor(goodR ? R.color.success : R.color.offline));
+            }
+        }
+
+        // Personalized ANC Badge
+        if (tvPersonalAncBadge != null) {
+            if (state.personalAncStored) {
+                tvPersonalAncBadge.setText("Calibrated ✓");
+                tvPersonalAncBadge.setTextColor(getColor(R.color.success));
+            } else {
+                tvPersonalAncBadge.setText("Not calibrated");
+                tvPersonalAncBadge.setTextColor(getColor(R.color.text_dim));
+            }
+        }
+
+        // Personalized ANC Dialog update when test is running
+        if (mPersonalAncRunning) {
+            if (state.personalAncStatus == 1) { // Success
+                mPersonalAncRunning = false;
+                if (btnPersonalAncAct != null) {
+                    btnPersonalAncAct.setText("Calibrate Again");
+                    btnPersonalAncAct.setEnabled(true);
+                }
+                if (tvPersonalAncStatus != null) {
+                    tvPersonalAncStatus.setText("Calibration complete! Custom anti-noise filter calculated and applied directly to DSP.");
+                    tvPersonalAncStatus.setTextColor(getColor(R.color.success));
+                }
+            } else if (state.personalAncStatus == 2) { // Failed
+                mPersonalAncRunning = false;
+                if (btnPersonalAncAct != null) {
+                    btnPersonalAncAct.setText("Retry Calibration");
+                    btnPersonalAncAct.setEnabled(true);
+                }
+                if (tvPersonalAncStatus != null) {
+                    tvPersonalAncStatus.setText("Calibration inconclusive. Please ensure a quiet environment and try again.");
+                    tvPersonalAncStatus.setTextColor(getColor(R.color.offline));
+                }
             }
         }
 
@@ -1824,4 +1884,71 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
         mFitTestDialog.show();
     }
+
+    private void showPersonalAncDialog() {
+        if (mService == null || mService.getState().connState != BudsState.ConnState.CONNECTED) {
+            Toast.makeText(this, "Connect to earbuds first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        BudsState st = mService.getState();
+        if ((st.wearLeft != 3 && st.wearLeft != 7) || (st.wearRight != 3 && st.wearRight != 7)) {
+            new AlertDialog.Builder(this)
+                .setTitle("Wear Both Earbuds")
+                .setMessage("Please insert both earbuds into your ears first to calibrate Personalized ANC.")
+                .setPositiveButton("OK", null)
+                .show();
+            return;
+        }
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(48, 32, 48, 24);
+
+        tvPersonalAncStatus = new TextView(this);
+        if (st.personalAncStored) {
+            tvPersonalAncStatus.setText("Personalized ANC profile is currently active in earbud hardware memory.\n\nYou can re-run the acoustic sweep calibration anytime to adapt to new ear tips or fit changes.");
+            tvPersonalAncStatus.setTextColor(getColor(R.color.success));
+        } else {
+            tvPersonalAncStatus.setText("The earbuds will play an acoustic frequency sweep tone to measure your ear canal geometry and generate an optimized anti-noise curve.");
+            tvPersonalAncStatus.setTextColor(getColor(R.color.text_dim));
+        }
+        tvPersonalAncStatus.setTextSize(13);
+        layout.addView(tvPersonalAncStatus);
+
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 32));
+        layout.addView(spacer);
+
+        btnPersonalAncAct = new Button(this);
+        btnPersonalAncAct.setText(st.personalAncStored ? "Re-Calibrate ANC Sweep" : "Start Calibration Sweep");
+        btnPersonalAncAct.setTextColor(Color.WHITE);
+        btnPersonalAncAct.setBackground(getDrawable(R.drawable.btn_primary));
+        btnPersonalAncAct.setTypeface(null, Typeface.BOLD);
+        layout.addView(btnPersonalAncAct);
+
+        mPersonalAncDialog = new AlertDialog.Builder(this)
+            .setTitle("Personalized ANC Sweep")
+            .setView(layout)
+            .setNegativeButton("Close", (d, w) -> {
+                if (mPersonalAncRunning && mService != null) {
+                    mService.cancelPersonalAnc();
+                    mPersonalAncRunning = false;
+                }
+            })
+            .create();
+
+        btnPersonalAncAct.setOnClickListener(v -> {
+            if (!mPersonalAncRunning && mService != null) {
+                mPersonalAncRunning = true;
+                btnPersonalAncAct.setEnabled(false);
+                btnPersonalAncAct.setText("Calibrating ear canal...");
+                tvPersonalAncStatus.setText("Playing frequency sweep chirps in earbuds...\nPlease stay still and remain in a quiet room.");
+                tvPersonalAncStatus.setTextColor(getColor(R.color.text_main));
+                mService.startPersonalAnc();
+            }
+        });
+
+        mPersonalAncDialog.show();
+    }
 }
+
