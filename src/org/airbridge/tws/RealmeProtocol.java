@@ -66,7 +66,7 @@ public class RealmeProtocol {
         public final boolean isPriority;
         public final boolean isActive;
 
-        public DeviceInfo(String name, byte[] mac, int deviceType, int connState, int activeState) {
+        public DeviceInfo(String name, byte[] mac, int deviceType, int connState, int activeState, boolean isAudioActive) {
             this.name = name;
             this.mac = mac;
             this.connState = connState;
@@ -74,11 +74,14 @@ public class RealmeProtocol {
             this.isConnected = (connState > 0);
             this.isCurrent = (activeState & 0x01) != 0;
             this.isPriority = (activeState & 0x02) != 0;
-            // bit 0 (0x01) is active audio stream in realme Buds Air 8 telemetry
-            this.isAudioActive = (activeState & 0x01) != 0;
+            this.isAudioActive = isAudioActive;
             int typeFromFlags = (activeState >> 3) & 0x07;
             this.deviceType = (typeFromFlags > 0) ? typeFromFlags : deviceType;
             this.isActive = isAudioActive;
+        }
+
+        public DeviceInfo(String name, byte[] mac, int deviceType, int connState, int activeState) {
+            this(name, mac, deviceType, connState, activeState, false);
         }
 
         public DeviceInfo(String name, byte[] mac, int connState, int activeState) {
@@ -276,7 +279,8 @@ public class RealmeProtocol {
                     }
                     idx += nameLen;
                 }
-                devList.add(new DeviceInfo(name, mac, (devType >> 3) & 0x07, 0, isActive));
+                boolean audioActive = (isActive & 0x01) != 0;
+                devList.add(new DeviceInfo(name, mac, (devType >> 3) & 0x07, 0, isActive, audioActive));
             }
             if (listener != null && !devList.isEmpty()) {
                 listener.onAudioRoutingUpdate(devList);

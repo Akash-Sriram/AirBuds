@@ -934,14 +934,28 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     @Override
     public void onConnectedDevicesUpdate(List<RealmeProtocol.DeviceInfo> devices) {
+        List<RealmeProtocol.DeviceInfo> merged = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         for (RealmeProtocol.DeviceInfo d : devices) {
+            boolean active = false;
+            if (mState.devices != null) {
+                for (RealmeProtocol.DeviceInfo existing : mState.devices) {
+                    if (macsEqual(existing.mac, d.mac)) {
+                        active = existing.isAudioActive;
+                        break;
+                    }
+                }
+            }
+            RealmeProtocol.DeviceInfo devWithAudio = new RealmeProtocol.DeviceInfo(
+                d.name, d.mac, d.deviceType, d.connState, d.activeState, active
+            );
+            merged.add(devWithAudio);
             sb.append(d.name).append("[conn=").append(d.isConnected)
               .append(",cur=").append(d.isCurrent)
-              .append(",audio=").append(d.isAudioActive).append("] ");
+              .append(",audio=").append(active).append("] ");
         }
         Log.d(TAG, "onConnectedDevicesUpdate: " + sb.toString());
-        mState.devices = new ArrayList<>(devices);
+        mState.devices = merged;
         notifyStateChanged();
     }
 
@@ -968,13 +982,11 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
                     }
                 }
                 if (match != null) {
-                    boolean wasActive = existing.isAudioActive;
-                    boolean nowActive = match.isAudioActive;
-                    if (wasActive != nowActive || existing.activeState != match.activeState) {
+                    if (existing.isAudioActive != match.isAudioActive || existing.activeState != match.activeState) {
                         changed = true;
                     }
                     updated.add(new RealmeProtocol.DeviceInfo(
-                        existing.name, existing.mac, existing.deviceType, existing.connState, match.activeState
+                        existing.name, existing.mac, existing.deviceType, existing.connState, match.activeState, match.isAudioActive
                     ));
                 } else {
                     updated.add(existing);
@@ -985,7 +997,6 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
                 notifyStateChanged();
             }
         }
-        mMainHandler.post(this::queryConnectedDevices);
     }
 
     private boolean macsEqual(byte[] a, byte[] b) {

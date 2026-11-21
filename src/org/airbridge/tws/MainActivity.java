@@ -1273,10 +1273,10 @@ public class MainActivity extends Activity implements BudsState.Listener {
             tvDevStatus.setPadding(padH, padV, padH, padV);
 
             boolean isPlaying = false;
-            if (isLocalAudioPlaying) {
-                isPlaying = isLocal;
-            } else if (dev.isConnected && dev.isAudioActive) {
-                isPlaying = true;
+            if (isLocal) {
+                isPlaying = isLocalAudioPlaying;
+            } else {
+                isPlaying = (!isLocalAudioPlaying && dev.isConnected && dev.isAudioActive);
             }
 
             if (isPlaying) {
@@ -1405,10 +1405,10 @@ public class MainActivity extends Activity implements BudsState.Listener {
         tvMac.setText(dev.getMacString());
 
         boolean isPlaying = false;
-        if (isLocalAudioPlaying) {
-            isPlaying = isLocal;
-        } else if (dev.isConnected && dev.isAudioActive) {
-            isPlaying = true;
+        if (isLocal) {
+            isPlaying = isLocalAudioPlaying;
+        } else {
+            isPlaying = (!isLocalAudioPlaying && dev.isConnected && dev.isAudioActive);
         }
         if (isPlaying) {
             tvBadge.setText("● Active Audio");
