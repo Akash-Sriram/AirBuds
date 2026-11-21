@@ -26,6 +26,11 @@ public class RealmeProtocol {
     public static final int OP_FIT_TEST = 0x05; // Cmd 0x0405
     public static final int OP_PERSONAL_ANC = 0x12; // Cmd 0x0412
     public static final int OP_PERSONAL_ANC_STORED = 0x1A; // Cmd 0x011A
+    public static final int OP_HIGH_VOLUME_QUERY = 0x10; // Cmd 0x0110
+    public static final int OP_HIGH_VOLUME_SET = 0x07;   // Cmd 0x0407
+    public static final int OP_AUTO_POWER_OFF_QUERY = 0x11; // Cmd 0x0111
+    public static final int OP_AUTO_POWER_OFF_SET = 0x0A;   // Cmd 0x040A
+    public static final int OP_FACTORY_RESET = 0x08;        // Cmd 0x0408
     public static final int OP_MULTI_CONNECT_INFO = 0x12; // Cmd 0x0112 (action 0x01 / 0x81)
     public static final int OP_OPERATE_MULTI_CONNECT = 0x0B; // Cmd 0x040B — verified realme multi-device operation (01=connect, 02=disconnect, 03=unpair)
     public static final int OP_OPERATE_MULTI_DEVICE = 0x29; // Cmd 0x0429 — secondary multi-device operation fallback
@@ -123,6 +128,8 @@ public class RealmeProtocol {
         void onSpatialTypeUpdate(int type); // 0=off, 1=fixed, 2=cinema from 0x812A
         void onAncHoldCycleUpdate(int mask); // bit 0: Off, bit 1: ANC, bit 2: Transparency
         void onKeyFunctionUpdate(int dev, int act, int fn); // dev 1=L/2=R, act 2=Double/3=Triple/4=Hold, fn=actionId
+        void onHighVolumeUpdate(boolean enabled);
+        void onAutoPowerOffUpdate(int minutes);
         void onRawPacket(String direction, String hex);
     }
 
@@ -458,6 +465,32 @@ public class RealmeProtocol {
                         listener.onPreferredDeviceUpdate(macStr, isAuto);
                     }
                 }
+            } else if (opcode == OP_HIGH_VOLUME_QUERY && payload.length >= 1) {
+                // 0x8110: [00] [val] -> val 1=boost enabled, 0=boost disabled
+                boolean enabled;
+                if (payload.length >= 2 && payload[0] == 0) {
+                    enabled = (payload[1] & 0xFF) == 1;
+                } else {
+                    enabled = (payload[0] & 0xFF) == 1;
+                }
+                if (listener != null) {
+                    listener.onHighVolumeUpdate(enabled);
+                }
+            } else if (opcode == OP_AUTO_POWER_OFF_QUERY && payload.length >= 1) {
+                // 0x8111: [00] [minutes] -> minutes: 0=Never, 5, 10, 15, 20, 25, 30
+                int minutes;
+                if (payload.length >= 2 && payload[0] == 0) {
+                    minutes = payload[1] & 0xFF;
+                } else {
+                    minutes = payload[0] & 0xFF;
+                }
+                if (listener != null) {
+                    listener.onAutoPowerOffUpdate(minutes);
+                }
+            } else if (opcode == OP_HIGH_VOLUME_SET && payload.length >= 1) {
+                android.util.Log.d("RealmeProtocol", "0x8407 High Volume ack status=" + (payload[0] & 0xFF));
+            } else if (opcode == OP_AUTO_POWER_OFF_SET && payload.length >= 1) {
+                android.util.Log.d("RealmeProtocol", "0x840A Auto Power Off ack status=" + (payload[0] & 0xFF));
             } else if (opcode == OP_OPERATE_MULTI_DEVICE || opcode == 0x0B || opcode == 0x08) {
                 // 0x8429 / 0x840B / 0x8408 response to multi-device operation
                 // payload[0]: 0x00=success, 0x01=rejected/unsupported, 0x02=failure

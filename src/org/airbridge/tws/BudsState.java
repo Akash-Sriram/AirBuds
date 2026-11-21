@@ -55,6 +55,8 @@ public class BudsState {
     public boolean smartWearAutoTrans = false; // Auto switch to Transparency when 1 earbud is removed
     public int personalAncStatus = -1; // -1 = idle, 0 = testing, 1 = success, 2 = failed
     public String batteryHealthStatus = null; // null if healthy, or warning string
+    public boolean highVolumeBoost = false;
+    public int autoPowerOffMinutes = 0; // 0 = Never, 5, 10, 15, 20, 25, 30
 
     // EQ State
     // Preset: 0 = Original, 1 = Deep Bass, 2 = Serenade, 3 = Clear Bass, 4 = Custom1
@@ -144,6 +146,8 @@ public class BudsState {
         this.smartWearAutoTrans = other.smartWearAutoTrans;
         this.personalAncStatus = other.personalAncStatus;
         this.batteryHealthStatus = other.batteryHealthStatus;
+        this.highVolumeBoost = other.highVolumeBoost;
+        this.autoPowerOffMinutes = other.autoPowerOffMinutes;
         this.statusText = other.statusText;
     }
 }

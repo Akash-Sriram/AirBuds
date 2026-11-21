@@ -470,6 +470,10 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             sendCmd(RealmeProtocol.OP_KEY_FUNCTION_QUERY, 0x01, new byte[0]);
             Thread.sleep(80);
             sendCmd(RealmeProtocol.OP_PROMPT_VOL_QUERY, 0x01, new byte[0]);
+            Thread.sleep(80);
+            sendCmd(RealmeProtocol.OP_HIGH_VOLUME_QUERY, 0x01, new byte[0]);
+            Thread.sleep(80);
+            sendCmd(RealmeProtocol.OP_AUTO_POWER_OFF_QUERY, 0x01, new byte[0]);
             mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
         } catch (Exception e) {
             Log.e(TAG, "Error sending queries", e);
@@ -962,6 +966,47 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
 
     public void queryPromptVolume() {
         sendCmd(RealmeProtocol.OP_PROMPT_VOL_QUERY, 0x01, new byte[0]);
+    }
+
+    public void setHighVolumeBoost(boolean enabled) {
+        Log.d(TAG, "setHighVolumeBoost: " + enabled);
+        sendCmd(RealmeProtocol.OP_HIGH_VOLUME_SET, 0x04, new byte[]{enabled ? (byte) 1 : (byte) 0});
+        mState.highVolumeBoost = enabled;
+        notifyStateChanged();
+    }
+
+    public void queryHighVolumeBoost() {
+        sendCmd(RealmeProtocol.OP_HIGH_VOLUME_QUERY, 0x01, new byte[0]);
+    }
+
+    public void setAutoPowerOffMinutes(int minutes) {
+        Log.d(TAG, "setAutoPowerOffMinutes: " + minutes);
+        sendCmd(RealmeProtocol.OP_AUTO_POWER_OFF_SET, 0x04, new byte[]{(byte) minutes});
+        mState.autoPowerOffMinutes = minutes;
+        notifyStateChanged();
+    }
+
+    public void queryAutoPowerOff() {
+        sendCmd(RealmeProtocol.OP_AUTO_POWER_OFF_QUERY, 0x01, new byte[0]);
+    }
+
+    public void factoryResetBuds() {
+        Log.d(TAG, "factoryResetBuds: Sending hardware factory reset command");
+        sendCmd(RealmeProtocol.OP_FACTORY_RESET, 0x04, new byte[]{0x01});
+    }
+
+    @Override
+    public void onHighVolumeUpdate(boolean enabled) {
+        Log.d(TAG, "onHighVolumeUpdate: " + enabled);
+        mState.highVolumeBoost = enabled;
+        notifyStateChanged();
+    }
+
+    @Override
+    public void onAutoPowerOffUpdate(int minutes) {
+        Log.d(TAG, "onAutoPowerOffUpdate: " + minutes + " min");
+        mState.autoPowerOffMinutes = minutes;
+        notifyStateChanged();
     }
 
     public void setSmartWearAutoTrans(boolean enabled) {

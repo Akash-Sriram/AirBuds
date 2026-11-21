@@ -157,6 +157,11 @@ public class MainActivity extends Activity implements BudsState.Listener {
     private Button btnPersonalAncAct;
     private boolean mPersonalAncRunning = false;
 
+    private Switch swHighVolumeBoost;
+    private View rowAutoPowerOff;
+    private TextView tvAutoPowerOffVal;
+    private View btnFactoryReset;
+
     private LinearLayout llCustomEqPanel;
     private EqGraphView mEqGraphView;
     private Button btnApplyCustomEq;
@@ -503,6 +508,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
         swSmartWearTrans = findViewById(R.id.sw_smart_wear_trans);
         rowPromptVolume = findViewById(R.id.row_prompt_volume);
         tvPromptVolVal = findViewById(R.id.tv_prompt_vol_val);
+        rowAutoPowerOff = findViewById(R.id.row_auto_power_off);
+        tvAutoPowerOffVal = findViewById(R.id.tv_auto_power_off_val);
+        btnFactoryReset = findViewById(R.id.btn_factory_reset);
         swHelmetMode = findViewById(R.id.sw_helmet_mode);
         swHelmetModeGestures = findViewById(R.id.sw_helmet_mode_gestures);
         swWindNoise = findViewById(R.id.sw_wind_noise);
@@ -569,6 +577,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
         swSpatialAudio = findViewById(R.id.sw_spatial_audio);
         swDynamicBass = findViewById(R.id.sw_dynamic_bass);
         swHiRes = findViewById(R.id.sw_hi_res);
+        swHighVolumeBoost = findViewById(R.id.sw_high_volume_boost);
 
         llDynamicSliders = findViewById(R.id.ll_dynamic_sliders);
         sbDynLow = findViewById(R.id.sb_dyn_low);
@@ -777,6 +786,8 @@ public class MainActivity extends Activity implements BudsState.Listener {
             if (btn.isPressed() && mService != null) mService.setSmartWearAutoTrans(checked);
         });
         if (rowPromptVolume != null) rowPromptVolume.setOnClickListener(v -> showPromptVolumeDialog());
+        if (rowAutoPowerOff != null) rowAutoPowerOff.setOnClickListener(v -> showAutoPowerOffDialog());
+        if (btnFactoryReset != null) btnFactoryReset.setOnClickListener(v -> showFactoryResetDialog());
         if (swGameMode != null) swGameMode.setOnCheckedChangeListener((btn, checked) -> {
             if (btn.isPressed() && mService != null) mService.setFeature(RealmeProtocol.FEAT_GAME_MODE, checked ? 1 : 0);
         });
@@ -794,6 +805,9 @@ public class MainActivity extends Activity implements BudsState.Listener {
         });
         if (swGoldenSound != null) swGoldenSound.setOnCheckedChangeListener((btn, checked) -> {
             if (btn.isPressed() && mService != null) mService.setFeature(RealmeProtocol.FEAT_GOLDEN_SOUND, checked ? 1 : 0);
+        });
+        if (swHighVolumeBoost != null) swHighVolumeBoost.setOnCheckedChangeListener((btn, checked) -> {
+            if (btn.isPressed() && mService != null) mService.setHighVolumeBoost(checked);
         });
         if (swShowNotification != null) {
             swShowNotification.setOnCheckedChangeListener((btn, checked) -> {
@@ -1087,12 +1101,16 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (swVocalEnhance != null) swVocalEnhance.setChecked(state.vocalEnhancement);
         if (swHiRes != null) swHiRes.setChecked(state.hiResAudio);
         if (swGoldenSound != null) swGoldenSound.setChecked(state.goldenSound);
+        if (swHighVolumeBoost != null && !swHighVolumeBoost.isPressed()) {
+            swHighVolumeBoost.setChecked(state.highVolumeBoost);
+        }
         if (swMultiDevice != null) swMultiDevice.setChecked(state.dualDeviceEnabled);
         if (swShowNotification != null && mService != null) swShowNotification.setChecked(mService.isShowNotification());
         if (swSmartWearTrans != null && !swSmartWearTrans.isPressed()) {
             swSmartWearTrans.setChecked(state.smartWearAutoTrans);
         }
         updatePromptVolText(state.promptVolume);
+        updateAutoPowerOffText(state.autoPowerOffMinutes);
 
         // Multipoint Device List
         renderDeviceList(state.devices);
@@ -1322,6 +1340,62 @@ public class MainActivity extends Activity implements BudsState.Listener {
             case 3: tvPromptVolVal.setText("High"); break;
             default: tvPromptVolVal.setText("Default"); break;
         }
+    }
+
+    private void showAutoPowerOffDialog() {
+        if (mService == null) return;
+        int[] minutes = new int[]{0, 5, 10, 15, 20, 25, 30};
+        String[] options = new String[]{
+            "Never (Disabled)", "5 minutes", "10 minutes", "15 minutes", "20 minutes", "25 minutes", "30 minutes"
+        };
+        int currentMins = mService.getState().autoPowerOffMinutes;
+        int checkedItem = 0;
+        for (int i = 0; i < minutes.length; i++) {
+            if (minutes[i] == currentMins) {
+                checkedItem = i;
+                break;
+            }
+        }
+
+        new AlertDialog.Builder(this)
+            .setTitle("Auto Power-Off Sleep Timer")
+            .setSingleChoiceItems(options, checkedItem, (d, which) -> {
+                int chosen = minutes[which];
+                if (mService != null) {
+                    mService.setAutoPowerOffMinutes(chosen);
+                }
+                updateAutoPowerOffText(chosen);
+                d.dismiss();
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    private void updateAutoPowerOffText(int mins) {
+        if (tvAutoPowerOffVal == null) return;
+        if (mins <= 0) {
+            tvAutoPowerOffVal.setText("Never");
+        } else {
+            tvAutoPowerOffVal.setText(mins + "m");
+        }
+    }
+
+    private void showFactoryResetDialog() {
+        if (mService == null || mService.getState().connState != BudsState.ConnState.CONNECTED) {
+            Toast.makeText(this, "Connect to earbuds first", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("Factory Reset Earbuds")
+            .setMessage("Are you sure you want to restore factory defaults?\n\nThis will clear all paired Bluetooth device records from earbud memory and reset DSP equalization.")
+            .setPositiveButton("Reset Earbuds", (d, which) -> {
+                if (mService != null) {
+                    mService.factoryResetBuds();
+                    Toast.makeText(this, "Factory reset command sent to earbuds", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private void renderDeviceList(List<RealmeProtocol.DeviceInfo> devices) {
