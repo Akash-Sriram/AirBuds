@@ -9,6 +9,8 @@ gen/
 *.idsig
 *.ap_
 resources.zip
+*.jar
+Stock apk/
 
 # Keystore & security files
 *.keystore

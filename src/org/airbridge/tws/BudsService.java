@@ -35,11 +35,13 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -88,6 +90,30 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
     private final Runnable mThrottledNotifRunnable = this::performUpdateNotification;
     private boolean mShowNotification = true;
     private int mSavedAncBeforeSingleWear = -1;
+
+    private final Set<String> mManualOnlyMacs = new HashSet<>();
+    private String mManualConnectBypassMac = null;
+    private final Runnable mClearManualBypassRunnable = () -> mManualConnectBypassMac = null;
+
+    public boolean isDeviceAutoConnectAllowed(String mac) {
+        if (mac == null) return true;
+        return !mManualOnlyMacs.contains(mac.toUpperCase());
+    }
+
+    public void setDeviceAutoConnectAllowed(String mac, boolean allowed) {
+        if (mac == null) return;
+        String upper = mac.toUpperCase();
+        if (allowed) {
+            mManualOnlyMacs.remove(upper);
+        } else {
+            mManualOnlyMacs.add(upper);
+        }
+        getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putStringSet("manual_only_devices", new HashSet<>(mManualOnlyMacs))
+            .apply();
+        notifyStateChanged();
+    }
 
     public boolean isShowNotification() {
         return mShowNotification;
@@ -143,6 +169,10 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         mState.gestureRightTriple = gPrefs.getInt("gesture_rt", 6);
         mState.gestureRightHold = gPrefs.getInt("gesture_rh", 8);
         mState.smartWearAutoTrans = gPrefs.getBoolean("smart_wear_trans", false);
+        Set<String> manualOnly = gPrefs.getStringSet("manual_only_devices", null);
+        if (manualOnly != null) {
+            mManualOnlyMacs.addAll(manualOnly);
+        }
 
         createNotificationChannel();
 
@@ -690,6 +720,14 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             }
         } catch (Exception ignored) {}
     }
+    private final Runnable mClearConnectingStateRunnable = () -> {
+        if (mState.pendingConnectingMac != null) {
+            Log.d(TAG, "Connecting state timed out for " + mState.pendingConnectingMac);
+            mState.pendingConnectingMac = null;
+            notifyStateChanged();
+        }
+    };
+
     public void disconnectDevice(RealmeProtocol.DeviceInfo dev) {
         if (dev == null || dev.mac == null || dev.mac.length < 6) return;
         Log.d(TAG, "disconnectDevice: Disconnecting " + dev.name + " (" + dev.getMacString() + ")");
@@ -701,23 +739,25 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             return;
         }
 
+        if (mState.pendingConnectingMac != null && mState.pendingConnectingMac.equalsIgnoreCase(dev.getMacString())) {
+            mState.pendingConnectingMac = null;
+            mMainHandler.removeCallbacks(mClearConnectingStateRunnable);
+            notifyStateChanged();
+        }
+
         // Wire MAC (Little-Endian: matches firmware internal device table)
         byte[] wireMac = new byte[6];
         System.arraycopy(dev.mac, 0, wireMac, 0, 6);
 
-        // Primary: 0x040B (Verified working on realme Buds Air 8 — status 0x00 ACK)
-        byte[] p0b = new byte[7];
-        p0b[0] = 0x02; // Action 0x02: Disconnect
-        System.arraycopy(wireMac, 0, p0b, 1, 6);
-        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, p0b);
+        // Official 8-byte protocol (realme Link SetCommandManager.u):
+        // [0x01 (count=1), mac[0..5] (6B Little-Endian), action (0x00=Disconnect)]
+        byte[] pOfficial = new byte[8];
+        pOfficial[0] = 0x01;
+        System.arraycopy(wireMac, 0, pOfficial, 1, 6);
+        pOfficial[7] = 0x00; // 0x00: Disconnect
+        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, pOfficial);
 
-        // Secondary fallback: 0x0429 for firmware variants that use the newer opcode
-        mMainHandler.postDelayed(() -> {
-            sendCmd(RealmeProtocol.OP_OPERATE_MULTI_DEVICE, 0x04, p0b);
-        }, 200);
-
-        mMainHandler.postDelayed(this::queryConnectedDevices, 600);
-        mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
+        startDeviceQueryLoop();
     }
 
     public void connectDevice(RealmeProtocol.DeviceInfo dev) {
@@ -730,22 +770,36 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             return;
         }
 
+        // Set pending connecting MAC so UI immediately reflects "Connecting..."
+        mState.pendingConnectingMac = dev.getMacString();
+        mManualConnectBypassMac = dev.getMacString().toUpperCase();
+        mMainHandler.removeCallbacks(mClearManualBypassRunnable);
+        mMainHandler.postDelayed(mClearManualBypassRunnable, 30000);
+        notifyStateChanged();
+
+        // 16s timeout to clear pending state if connection fails
+        mMainHandler.removeCallbacks(mClearConnectingStateRunnable);
+        mMainHandler.postDelayed(mClearConnectingStateRunnable, 16000);
+
+        // Ensure Multi-Device Connection is enabled on the earbuds first so incoming link isn't rejected
+        if (!mState.dualDeviceEnabled) {
+            Log.d(TAG, "connectDevice: Multi-device connection disabled, enabling on earbuds first...");
+            setFeature(RealmeProtocol.FEAT_MULTI_DEVICE, 1);
+        }
+
         byte[] wireMac = new byte[6];
         System.arraycopy(dev.mac, 0, wireMac, 0, 6);
 
-        // Primary: 0x040B
-        byte[] p0b = new byte[7];
-        p0b[0] = 0x01; // Action 0x01: Connect
-        System.arraycopy(wireMac, 0, p0b, 1, 6);
-        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, p0b);
+        // Official 8-byte protocol (realme Link SetCommandManager.u):
+        // [0x01 (count=1), mac[0..5] (6B Little-Endian), action (0x01=Connect)]
+        byte[] pOfficial = new byte[8];
+        pOfficial[0] = 0x01;
+        System.arraycopy(wireMac, 0, pOfficial, 1, 6);
+        pOfficial[7] = 0x01; // 0x01: Connect
+        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, pOfficial);
 
-        // Secondary fallback: 0x0429
-        mMainHandler.postDelayed(() -> {
-            sendCmd(RealmeProtocol.OP_OPERATE_MULTI_DEVICE, 0x04, p0b);
-        }, 200);
-
-        mMainHandler.postDelayed(this::queryConnectedDevices, 600);
-        mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
+        // Start active query loop to catch status change immediately
+        startDeviceQueryLoop();
     }
 
     public void removeDevice(RealmeProtocol.DeviceInfo dev) {
@@ -758,22 +812,24 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
             return;
         }
 
+        if (mState.pendingConnectingMac != null && mState.pendingConnectingMac.equalsIgnoreCase(dev.getMacString())) {
+            mState.pendingConnectingMac = null;
+            mMainHandler.removeCallbacks(mClearConnectingStateRunnable);
+            notifyStateChanged();
+        }
+
         byte[] wireMac = new byte[6];
         System.arraycopy(dev.mac, 0, wireMac, 0, 6);
 
-        // Primary: 0x040B
-        byte[] p0b = new byte[7];
-        p0b[0] = 0x03; // Action 0x03: Remove / Unpair
-        System.arraycopy(wireMac, 0, p0b, 1, 6);
-        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, p0b);
+        // Official 8-byte protocol (realme Link SetCommandManager.u):
+        // [0x01 (count=1), mac[0..5] (6B Little-Endian), action (0x02=Unpair/Delete)]
+        byte[] pOfficial = new byte[8];
+        pOfficial[0] = 0x01;
+        System.arraycopy(wireMac, 0, pOfficial, 1, 6);
+        pOfficial[7] = 0x02; // 0x02: Unpair / Delete
+        sendCmd(RealmeProtocol.OP_OPERATE_MULTI_CONNECT, 0x04, pOfficial);
 
-        // Secondary fallback: 0x0429
-        mMainHandler.postDelayed(() -> {
-            sendCmd(RealmeProtocol.OP_OPERATE_MULTI_DEVICE, 0x04, p0b);
-        }, 200);
-
-        mMainHandler.postDelayed(this::queryConnectedDevices, 600);
-        mMainHandler.postDelayed(this::queryConnectedDevices, 1500);
+        startDeviceQueryLoop();
     }
 
     public void setPreferredDevice(String mac, boolean isAuto) {
@@ -1129,6 +1185,34 @@ public class BudsService extends Service implements RealmeProtocol.Listener {
         }
         Log.d(TAG, "onConnectedDevicesUpdate: " + sb.toString());
         mState.devices = new ArrayList<>(devices);
+        if (mState.pendingConnectingMac != null) {
+            for (RealmeProtocol.DeviceInfo d : devices) {
+                if (mState.pendingConnectingMac.equalsIgnoreCase(d.getMacString()) && d.isConnected) {
+                    Log.d(TAG, "onConnectedDevicesUpdate: pending connecting device is now connected: " + d.name);
+                    mState.pendingConnectingMac = null;
+                    mMainHandler.removeCallbacks(mClearConnectingStateRunnable);
+                    break;
+                }
+            }
+        }
+
+        // Auto-Connect Shield: intercept and disconnect unauthorized auto-reconnects
+        for (RealmeProtocol.DeviceInfo d : devices) {
+            if (d.isConnected && d.mac != null) {
+                String macUpper = d.getMacString().toUpperCase();
+                if (mManualOnlyMacs.contains(macUpper)) {
+                    if (mManualConnectBypassMac != null && mManualConnectBypassMac.equals(macUpper)) {
+                        Log.d(TAG, "Shield: Device " + d.name + " (" + macUpper + ") connected via manual bypass.");
+                    } else {
+                        Log.i(TAG, "Shield: Intercepted unauthorized connection from " + d.name + " (" + macUpper + "). Auto-disconnecting...");
+                        final String devName = d.name;
+                        mMainHandler.post(() -> Toast.makeText(BudsService.this, "Shield: Disconnected " + devName + " (Manual-only)", Toast.LENGTH_SHORT).show());
+                        disconnectDevice(d);
+                    }
+                }
+            }
+        }
+
         notifyStateChanged();
     }
 

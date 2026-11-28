@@ -9,6 +9,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -21,6 +22,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.DisplayCutout;
 import android.view.Gravity;
@@ -52,6 +54,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
     private static final int FORM_SOUND = 1;
     private static final int FORM_DEVICES = 2;
     private static final int FORM_GESTURES = 3;
+    private static final int FORM_SETTINGS = 4;
 
     private int mCurrentForm = FORM_MAIN;
 
@@ -206,6 +209,31 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
     private TextView tvInfoFirmware;
     private TextView tvInfoHardware;
+
+    // Collapsible Sections
+    private View llHeaderNoiseControl;
+    private View llBodyNoiseControl;
+    private ImageView ivChevronNoiseControl;
+    private TextView tvHeaderNoiseSummary;
+
+    private View llHeaderSmartFeatures;
+    private View llBodySmartFeatures;
+    private ImageView ivChevronSmartFeatures;
+    private TextView tvHeaderSmartSummary;
+
+    // Quick Access Card
+    private View btnQuickManageDevices;
+    private LinearLayout llQuickDevicesChips;
+    private View btnQuickRideMode;
+    private ImageView ivQuickRideIcon;
+    private TextView tvQuickRideTitle;
+    private TextView tvQuickRideSubtitle;
+    private Switch swQuickRideMode;
+
+    // Settings Navigation & Form
+    private View cardNavSettings;
+    private View btnBackSettings;
+    private LinearLayout llFormSettings;
 
     public static class GestureOption {
         public final int id;
@@ -374,6 +402,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
         if (llFormSound != null) llFormSound.setVisibility(formId == FORM_SOUND ? View.VISIBLE : View.GONE);
         if (llFormDevices != null) llFormDevices.setVisibility(formId == FORM_DEVICES ? View.VISIBLE : View.GONE);
         if (llFormGestures != null) llFormGestures.setVisibility(formId == FORM_GESTURES ? View.VISIBLE : View.GONE);
+        if (llFormSettings != null) llFormSettings.setVisibility(formId == FORM_SETTINGS ? View.VISIBLE : View.GONE);
         if (formId == FORM_DEVICES && mService != null) {
             renderDeviceList(mService.getState().devices);
             mService.startDeviceQueryLoop();
@@ -442,8 +471,8 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 }
                 float density = getResources().getDisplayMetrics().density;
                 int padH = (int) (16 * density);
-                int padTop = top + (int) (10 * density);
-                int padB = bottom + (int) (24 * density);
+                int padTop = top + (int) (4 * density);
+                int padB = bottom + (int) (8 * density);
                 v.setPadding(padH, padTop, padH, padB);
                 return insets;
             });
@@ -524,6 +553,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
         llFormSound = findViewById(R.id.ll_form_sound);
         llFormDevices = findViewById(R.id.ll_form_devices);
         llFormGestures = findViewById(R.id.ll_form_gestures);
+        llFormSettings = findViewById(R.id.ll_form_settings);
         tvInfoFirmware = findViewById(R.id.tv_info_firmware);
         tvInfoHardware = findViewById(R.id.tv_info_hardware);
         TextView tvInfoAppVersion = findViewById(R.id.tv_info_app_version);
@@ -553,10 +583,12 @@ public class MainActivity extends Activity implements BudsState.Listener {
         cardNavSound = findViewById(R.id.card_nav_sound);
         cardNavDevices = findViewById(R.id.card_nav_devices);
         cardNavGestures = findViewById(R.id.card_nav_gestures);
+        cardNavSettings = findViewById(R.id.card_nav_settings);
 
         btnBackSound = findViewById(R.id.btn_back_sound);
         btnBackDevices = findViewById(R.id.btn_back_devices);
         btnBackGestures = findViewById(R.id.btn_back_gestures);
+        btnBackSettings = findViewById(R.id.btn_back_settings);
 
         tvDeviceNavSubtitle = findViewById(R.id.tv_device_nav_subtitle);
         rowOpenEqMode = findViewById(R.id.row_open_eq_mode);
@@ -599,6 +631,33 @@ public class MainActivity extends Activity implements BudsState.Listener {
         cbCycleAnc = findViewById(R.id.cb_cycle_anc);
         cbCycleTrans = findViewById(R.id.cb_cycle_trans);
         cbCycleOff = findViewById(R.id.cb_cycle_off);
+
+        // Collapsible Cards
+        llHeaderNoiseControl = findViewById(R.id.ll_header_noise_control);
+        llBodyNoiseControl = findViewById(R.id.ll_body_noise_control);
+        ivChevronNoiseControl = findViewById(R.id.iv_chevron_noise_control);
+        tvHeaderNoiseSummary = findViewById(R.id.tv_header_noise_summary);
+
+        llHeaderSmartFeatures = findViewById(R.id.ll_header_smart_features);
+        llBodySmartFeatures = findViewById(R.id.ll_body_smart_features);
+        ivChevronSmartFeatures = findViewById(R.id.iv_chevron_smart_features);
+        tvHeaderSmartSummary = findViewById(R.id.tv_header_smart_summary);
+
+        SharedPreferences sp = getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE);
+        boolean noiseCollapsed = sp.getBoolean("pref_collapse_noise_control", true);
+        setSectionExpanded(llBodyNoiseControl, ivChevronNoiseControl, !noiseCollapsed);
+
+        boolean smartCollapsed = sp.getBoolean("pref_collapse_smart_features", true);
+        setSectionExpanded(llBodySmartFeatures, ivChevronSmartFeatures, !smartCollapsed);
+
+        // Quick Access Card
+        btnQuickManageDevices = findViewById(R.id.btn_quick_manage_devices);
+        llQuickDevicesChips = findViewById(R.id.ll_quick_devices_chips);
+        btnQuickRideMode = findViewById(R.id.btn_quick_ride_mode);
+        ivQuickRideIcon = findViewById(R.id.iv_quick_ride_icon);
+        tvQuickRideTitle = findViewById(R.id.tv_quick_ride_title);
+        tvQuickRideSubtitle = findViewById(R.id.tv_quick_ride_subtitle);
+        swQuickRideMode = findViewById(R.id.sw_quick_ride_mode);
 
         updateAncUi(8);
     }
@@ -705,11 +764,58 @@ public class MainActivity extends Activity implements BudsState.Listener {
             if (mService != null) mService.queryConnectedDevices();
         });
         if (cardNavGestures != null) cardNavGestures.setOnClickListener(v -> showForm(FORM_GESTURES));
+        if (cardNavSettings != null) cardNavSettings.setOnClickListener(v -> showForm(FORM_SETTINGS));
 
         View.OnClickListener backToMain = v -> showForm(FORM_MAIN);
         if (btnBackSound != null) btnBackSound.setOnClickListener(backToMain);
         if (btnBackDevices != null) btnBackDevices.setOnClickListener(backToMain);
         if (btnBackGestures != null) btnBackGestures.setOnClickListener(backToMain);
+        if (btnBackSettings != null) btnBackSettings.setOnClickListener(backToMain);
+
+        // Collapsible Section Listeners
+        if (llHeaderNoiseControl != null) {
+            llHeaderNoiseControl.setOnClickListener(v -> {
+                boolean isExpanded = (llBodyNoiseControl != null && llBodyNoiseControl.getVisibility() == View.VISIBLE);
+                boolean newExpanded = !isExpanded;
+                setSectionExpanded(llBodyNoiseControl, ivChevronNoiseControl, newExpanded);
+                getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("pref_collapse_noise_control", !newExpanded)
+                    .apply();
+            });
+        }
+
+        if (llHeaderSmartFeatures != null) {
+            llHeaderSmartFeatures.setOnClickListener(v -> {
+                boolean isExpanded = (llBodySmartFeatures != null && llBodySmartFeatures.getVisibility() == View.VISIBLE);
+                boolean newExpanded = !isExpanded;
+                setSectionExpanded(llBodySmartFeatures, ivChevronSmartFeatures, newExpanded);
+                getSharedPreferences("airbuds_prefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("pref_collapse_smart_features", !newExpanded)
+                    .apply();
+            });
+        }
+
+        // Quick Access Listeners
+        if (btnQuickManageDevices != null) {
+            btnQuickManageDevices.setOnClickListener(v -> {
+                showForm(FORM_DEVICES);
+                if (mService != null) mService.queryConnectedDevices();
+            });
+        }
+
+        if (btnQuickRideMode != null) {
+            btnQuickRideMode.setOnClickListener(v -> {
+                if (mService != null) {
+                    boolean target = !mService.getState().isHelmetMode;
+                    mService.setHelmetMode(target);
+                    Toast.makeText(this, target
+                        ? "Ride Mode Active: Touch & wear sensors locked"
+                        : "Ride Mode Disabled: Gestures restored", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
 
         // ANC Modes
         if (llAncBtnCancel != null) llAncBtnCancel.setOnClickListener(v -> {
@@ -1115,6 +1221,48 @@ public class MainActivity extends Activity implements BudsState.Listener {
         // Multipoint Device List
         renderDeviceList(state.devices);
 
+        // Collapsible summaries
+        if (tvHeaderNoiseSummary != null) {
+            String ancDesc;
+            switch (state.ancMode) {
+                case 0: ancDesc = "ANC"; break;
+                case 1: ancDesc = "Transparency"; break;
+                case 2: ancDesc = "Off"; break;
+                default: ancDesc = "ANC"; break;
+            }
+            tvHeaderNoiseSummary.setText(ancDesc);
+        }
+
+        if (tvHeaderSmartSummary != null) {
+            int activeCount = 0;
+            if (state.isHelmetMode) activeCount++;
+            if (state.inEarDetection) activeCount++;
+            if (state.smartWearAutoTrans) activeCount++;
+            if (state.gameMode) activeCount++;
+            if (state.autoAnswer) activeCount++;
+            tvHeaderSmartSummary.setText(activeCount + " active");
+        }
+
+        // Quick Ride / Helmet Mode
+        if (swQuickRideMode != null) {
+            swQuickRideMode.setChecked(state.isHelmetMode);
+        }
+        if (ivQuickRideIcon != null) {
+            ivQuickRideIcon.setColorFilter(getColor(state.isHelmetMode ? R.color.warning : R.color.text_dim));
+        }
+        if (tvQuickRideTitle != null) {
+            tvQuickRideTitle.setTextColor(getColor(state.isHelmetMode ? R.color.warning : R.color.text_main));
+        }
+        if (tvQuickRideSubtitle != null) {
+            tvQuickRideSubtitle.setText(state.isHelmetMode
+                ? "Ride Mode Active • Touch & in-ear sensors locked"
+                : "Locks touch & in-ear sensors to prevent accidental taps");
+            tvQuickRideSubtitle.setTextColor(getColor(state.isHelmetMode ? R.color.warning : R.color.text_dim));
+        }
+
+        // Quick Device Switcher Chips
+        renderQuickDeviceSwitcher(state.devices);
+
         // Fit Test Result updates
         if (mFitTestRunning && (state.fitTestLeft != -1 || state.fitTestRight != -1)) {
             mFitTestRunning = false;
@@ -1206,6 +1354,15 @@ public class MainActivity extends Activity implements BudsState.Listener {
             setSpinnerSelection(spRightHold, state.gestureRightHold);
         } finally {
             mUpdatingSpinnersFromState = false;
+        }
+    }
+
+    private void setSectionExpanded(View body, ImageView chevron, boolean expanded) {
+        if (body != null) {
+            body.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        }
+        if (chevron != null) {
+            chevron.setRotation(expanded ? 0f : -90f);
         }
     }
 
@@ -1415,7 +1572,16 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
         if (llDeviceList == null || mCurrentForm != FORM_DEVICES) return;
         llDeviceList.removeAllViews();
-        if (devices == null || devices.isEmpty()) return;
+        if (devices == null || devices.isEmpty()) {
+            TextView tvEmpty = new TextView(this);
+            tvEmpty.setText("No paired devices found");
+            tvEmpty.setTextColor(getColor(R.color.text_dim));
+            tvEmpty.setTextSize(12);
+            int pad = (int) (12 * getResources().getDisplayMetrics().density);
+            tvEmpty.setPadding(pad, pad, pad, pad);
+            llDeviceList.addView(tvEmpty);
+            return;
+        }
 
         AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         boolean isLocalAudioPlaying = (mService != null && mService.getState().isLocalA2dpPlaying)
@@ -1423,9 +1589,12 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
         List<RealmeProtocol.DeviceInfo> connectedList = new ArrayList<>();
         List<RealmeProtocol.DeviceInfo> historyList = new ArrayList<>();
+        String pendingMac = (mService != null && mService.getState() != null)
+            ? mService.getState().pendingConnectingMac : null;
 
         for (RealmeProtocol.DeviceInfo d : devices) {
-            if (d.isConnected) {
+            boolean isPending = (pendingMac != null && pendingMac.equalsIgnoreCase(d.getMacString()));
+            if (d.isConnected || isPending) {
                 if (isThisPhone(d)) {
                     connectedList.add(0, d); // Local phone first
                 } else {
@@ -1461,6 +1630,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
             row.setGravity(Gravity.CENTER_VERTICAL);
             int pad = (int) (12 * getResources().getDisplayMetrics().density);
             row.setPadding(pad, pad, pad, pad);
+            row.setBackgroundResource(R.drawable.card_clickable_bg);
 
             ImageView icon = new ImageView(this);
             icon.setLayoutParams(new LinearLayout.LayoutParams(
@@ -1468,6 +1638,11 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 (int) (26 * getResources().getDisplayMetrics().density)
             ));
             icon.setImageResource(getDeviceIcon(dev));
+            if (dev.isConnected || isLocal) {
+                icon.setColorFilter(getColor(R.color.primary));
+            } else {
+                icon.setColorFilter(getColor(R.color.text_dim));
+            }
             row.addView(icon);
 
             LinearLayout textCol = new LinearLayout(this);
@@ -1482,7 +1657,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 : "Paired Device (" + (dev.getMacString().length() >= 5 ? dev.getMacString().substring(dev.getMacString().length() - 5) : "BT") + ")";
 
             TextView tvName = new TextView(this);
-            tvName.setText(displayName);
+            tvName.setText(isLocal ? "This Phone" : displayName);
             tvName.setTextColor(getColor(R.color.text_main));
             tvName.setTextSize(14);
             tvName.setTypeface(null, Typeface.BOLD);
@@ -1490,8 +1665,10 @@ public class MainActivity extends Activity implements BudsState.Listener {
 
             TextView tvSub = new TextView(this);
             String subPrefix = isLocal ? "This phone • " : (dev.isConnected ? "Connected • " : "Paired device • ");
-            tvSub.setText(subPrefix + dev.getMacString());
-            tvSub.setTextColor(getColor(R.color.text_dim));
+            boolean shield = !isLocal && mService != null && !mService.isDeviceAutoConnectAllowed(dev.getMacString());
+            String shieldText = shield ? "Shield active • " : "";
+            tvSub.setText(subPrefix + shieldText + dev.getMacString());
+            tvSub.setTextColor(shield ? getColor(R.color.warning) : getColor(R.color.text_dim));
             tvSub.setTextSize(11);
             textCol.addView(tvSub);
 
@@ -1505,7 +1682,15 @@ public class MainActivity extends Activity implements BudsState.Listener {
             int padV = (int) (4 * getResources().getDisplayMetrics().density);
             tvDevStatus.setPadding(padH, padV, padH, padV);
 
-            if (isLocal && isLocalAudioPlaying) {
+            boolean isPending = (pendingMac != null && pendingMac.equalsIgnoreCase(dev.getMacString()) && !dev.isConnected);
+            boolean isInCall = (am != null && (am.getMode() == AudioManager.MODE_IN_CALL || am.getMode() == AudioManager.MODE_IN_COMMUNICATION));
+
+            if (isLocal && isInCall) {
+                tvDevStatus.setText("● In Call");
+                tvDevStatus.setTextColor(getColor(R.color.success));
+                tvSub.setText("This phone • Phone Call");
+                tvSub.setTextColor(getColor(R.color.success));
+            } else if (isLocal && isLocalAudioPlaying) {
                 tvDevStatus.setText("● Active Audio");
                 tvDevStatus.setTextColor(getColor(R.color.success));
                 tvSub.setText("This phone • Playing Audio");
@@ -1515,19 +1700,22 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 tvDevStatus.setTextColor(getColor(R.color.info));
                 tvSub.setText("This phone • Idle");
                 tvSub.setTextColor(getColor(R.color.text_dim));
+            } else if (isPending) {
+                tvDevStatus.setText("Connecting...");
+                tvDevStatus.setTextColor(getColor(R.color.primary));
+                tvSub.setText("Connecting • " + dev.getMacString());
+                tvSub.setTextColor(getColor(R.color.primary));
             } else if (dev.isConnected) {
                 tvDevStatus.setText("Connected");
                 tvDevStatus.setTextColor(getColor(R.color.info));
-                tvSub.setText("Connected • " + dev.getMacString());
-                tvSub.setTextColor(getColor(R.color.text_dim));
             } else {
                 tvDevStatus.setText("Not connected");
                 tvDevStatus.setTextColor(getColor(R.color.offline));
-                tvSub.setText("Paired device • " + dev.getMacString());
-                tvSub.setTextColor(getColor(R.color.text_dim));
             }
             row.addView(tvDevStatus);
 
+            row.setClickable(true);
+            row.setFocusable(true);
             row.setOnClickListener(v -> onDeviceRowClicked(dev));
             row.setOnLongClickListener(v -> {
                 showRemoveDeviceDialog(dev);
@@ -1542,6 +1730,297 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 llDeviceList.addView(divider);
             }
         }
+    }
+
+    private void renderQuickDeviceSwitcher(List<RealmeProtocol.DeviceInfo> devices) {
+        if (llQuickDevicesChips == null) return;
+
+        List<RealmeProtocol.DeviceInfo> sorted = sortDeviceList(devices);
+        populate2ColumnDeviceGrid(llQuickDevicesChips, sorted);
+    }
+
+    private List<RealmeProtocol.DeviceInfo> sortDeviceList(List<RealmeProtocol.DeviceInfo> devices) {
+        if (devices == null) return new ArrayList<>();
+        List<RealmeProtocol.DeviceInfo> connectedList = new ArrayList<>();
+        List<RealmeProtocol.DeviceInfo> historyList = new ArrayList<>();
+        String pendingMac = (mService != null && mService.getState() != null)
+            ? mService.getState().pendingConnectingMac : null;
+
+        for (RealmeProtocol.DeviceInfo d : devices) {
+            boolean isPending = (pendingMac != null && pendingMac.equalsIgnoreCase(d.getMacString()));
+            if (d.isConnected || isPending) {
+                if (isThisPhone(d)) {
+                    connectedList.add(0, d); // Local phone first
+                } else {
+                    connectedList.add(d);
+                }
+            } else {
+                historyList.add(d);
+            }
+        }
+
+        List<RealmeProtocol.DeviceInfo> displayList = new ArrayList<>();
+        displayList.addAll(connectedList);
+        displayList.addAll(historyList);
+        return displayList;
+    }
+
+    private void populate2ColumnDeviceGrid(LinearLayout container, List<RealmeProtocol.DeviceInfo> devices) {
+        if (container == null) return;
+        container.removeAllViews();
+        if (devices == null || devices.isEmpty()) {
+            TextView tvEmpty = new TextView(this);
+            tvEmpty.setText("No paired devices found");
+            tvEmpty.setTextColor(getColor(R.color.text_dim));
+            tvEmpty.setTextSize(12);
+            int pad = (int) (12 * getResources().getDisplayMetrics().density);
+            tvEmpty.setPadding(pad, pad, pad, pad);
+            container.addView(tvEmpty);
+            return;
+        }
+
+        float density = getResources().getDisplayMetrics().density;
+        int dp4 = (int) (4 * density);
+        int dp8 = (int) (8 * density);
+
+        for (int i = 0; i < devices.size(); i += 2) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setWeightSum(2.0f);
+            LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            if (i > 0) {
+                rowLp.topMargin = dp8;
+            }
+            row.setLayoutParams(rowLp);
+
+            // Left column (device i)
+            RealmeProtocol.DeviceInfo leftDev = devices.get(i);
+            row.addView(createDeviceCard(leftDev, true));
+
+            // Right column (device i + 1 if available, else invisible placeholder)
+            if (i + 1 < devices.size()) {
+                RealmeProtocol.DeviceInfo rightDev = devices.get(i + 1);
+                row.addView(createDeviceCard(rightDev, false));
+            } else {
+                View placeholder = new View(this);
+                LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(0, 0, 1.0f);
+                pLp.setMarginStart(dp4);
+                placeholder.setLayoutParams(pLp);
+                row.addView(placeholder);
+            }
+
+            container.addView(row);
+        }
+    }
+
+    private View createDeviceCard(RealmeProtocol.DeviceInfo dev, boolean isLeft) {
+        float density = getResources().getDisplayMetrics().density;
+        int dp1 = Math.max(1, (int) (1 * density));
+        int dp2 = (int) (2 * density);
+        int dp4 = (int) (4 * density);
+        int dp6 = (int) (6 * density);
+        int dp8 = (int) (8 * density);
+        int dp10 = (int) (10 * density);
+        int dp12 = (int) (12 * density);
+        int dp22 = (int) (22 * density);
+
+        boolean isLocal = isThisPhone(dev);
+        String pendingMac = (mService != null && mService.getState() != null)
+            ? mService.getState().pendingConnectingMac : null;
+        boolean isPending = (pendingMac != null && pendingMac.equalsIgnoreCase(dev.getMacString()) && !dev.isConnected);
+        boolean isAutoConnectAllowed = (mService == null || mService.isDeviceAutoConnectAllowed(dev.getMacString()));
+
+        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        boolean isLocalAudioPlaying = (mService != null && mService.getState().isLocalA2dpPlaying)
+            || (am != null && (am.isMusicActive() || am.getMode() == AudioManager.MODE_IN_CALL || am.getMode() == AudioManager.MODE_IN_COMMUNICATION));
+        boolean isInCall = (am != null && (am.getMode() == AudioManager.MODE_IN_CALL || am.getMode() == AudioManager.MODE_IN_COMMUNICATION));
+
+        // Card Container
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackgroundResource(R.drawable.card_device_bg);
+        card.setPadding(dp10, dp8, dp10, dp8);
+
+        LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1.0f);
+        if (isLeft) {
+            cardLp.setMarginEnd(dp4);
+        } else {
+            cardLp.setMarginStart(dp4);
+        }
+        card.setLayoutParams(cardLp);
+
+        // Top Row: Icon + Spacer + Status Badge
+        LinearLayout topRow = new LinearLayout(this);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        topRow.setGravity(Gravity.CENTER_VERTICAL);
+        topRow.setLayoutParams(new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        ImageView icon = new ImageView(this);
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(dp22, dp22);
+        icon.setLayoutParams(iconLp);
+        icon.setImageResource(getDeviceIcon(dev));
+        if (dev.isConnected || isLocal) {
+            icon.setColorFilter(getColor(R.color.primary));
+        } else {
+            icon.setColorFilter(getColor(R.color.text_dim));
+        }
+        topRow.addView(icon);
+
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(0, 0, 1.0f));
+        topRow.addView(spacer);
+
+        TextView tvBadge = new TextView(this);
+        tvBadge.setTextSize(10);
+        tvBadge.setTypeface(null, Typeface.BOLD);
+        tvBadge.setBackgroundResource(R.drawable.pill_badge);
+        tvBadge.setPadding(dp6, dp2, dp6, dp2);
+
+        if (isLocal && isInCall) {
+            tvBadge.setText("● Call");
+            tvBadge.setTextColor(getColor(R.color.success));
+        } else if (isLocal && isLocalAudioPlaying) {
+            tvBadge.setText("● Active");
+            tvBadge.setTextColor(getColor(R.color.success));
+        } else if (isLocal) {
+            tvBadge.setText("Connected");
+            tvBadge.setTextColor(getColor(R.color.info));
+        } else if (isPending) {
+            tvBadge.setText("•••");
+            tvBadge.setTextColor(getColor(R.color.primary));
+        } else if (dev.isConnected) {
+            tvBadge.setText("Connected");
+            tvBadge.setTextColor(getColor(R.color.info));
+        } else {
+            tvBadge.setText("Offline");
+            tvBadge.setTextColor(getColor(R.color.offline));
+        }
+        topRow.addView(tvBadge);
+        card.addView(topRow);
+
+        // Device Name
+        TextView tvName = new TextView(this);
+        String displayName = (dev.name != null && !dev.name.trim().isEmpty())
+            ? dev.name.trim()
+            : "Device (" + (dev.getMacString().length() >= 5 ? dev.getMacString().substring(dev.getMacString().length() - 5) : "BT") + ")";
+        if (isLocal) {
+            displayName = "This Phone";
+        }
+        tvName.setText(displayName);
+        tvName.setTextColor(getColor(R.color.text_main));
+        tvName.setTextSize(13);
+        tvName.setTypeface(null, Typeface.BOLD);
+        tvName.setSingleLine(true);
+        tvName.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams nameLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        nameLp.topMargin = dp4;
+        tvName.setLayoutParams(nameLp);
+        card.addView(tvName);
+
+        // Subtitle / Shield line
+        TextView tvSub = new TextView(this);
+        tvSub.setTextSize(10);
+        tvSub.setSingleLine(true);
+        tvSub.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        subLp.topMargin = dp1;
+        tvSub.setLayoutParams(subLp);
+
+        if (isLocal) {
+            tvSub.setText(isLocalAudioPlaying ? "Playing audio" : "Current device");
+            tvSub.setTextColor(isLocalAudioPlaying ? getColor(R.color.success) : getColor(R.color.text_dim));
+        } else if (!isAutoConnectAllowed) {
+            tvSub.setText("🛡 Auto-block (Shield)");
+            tvSub.setTextColor(getColor(R.color.warning));
+        } else if (dev.isConnected) {
+            tvSub.setText("Dual-connect active");
+            tvSub.setTextColor(getColor(R.color.text_dim));
+        } else {
+            tvSub.setText("Paired history");
+            tvSub.setTextColor(getColor(R.color.text_dim));
+        }
+        card.addView(tvSub);
+
+        // 1-Tap Action Pill / Button
+        if (!isLocal) {
+            TextView btnAction = new TextView(this);
+            btnAction.setTextSize(11);
+            btnAction.setTypeface(null, Typeface.BOLD);
+            btnAction.setGravity(Gravity.CENTER);
+            btnAction.setPadding(dp8, dp4, dp8, dp4);
+
+            LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            btnLp.topMargin = dp6;
+            btnAction.setLayoutParams(btnLp);
+
+            if (dev.isConnected) {
+                btnAction.setText("Disconnect");
+                btnAction.setTextColor(getColor(R.color.text_dim));
+                btnAction.setBackgroundResource(R.drawable.btn_inactive);
+                btnAction.setOnClickListener(v -> {
+                    if (mService != null) {
+                        mService.disconnectDevice(dev);
+                        Toast.makeText(MainActivity.this, "Disconnecting " + dev.name + "...", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else {
+                btnAction.setText(isPending ? "Connecting..." : "Connect");
+                btnAction.setTextColor(isPending ? getColor(R.color.text_dim) : Color.BLACK);
+                btnAction.setBackgroundResource(isPending ? R.drawable.btn_inactive : R.drawable.btn_primary);
+                btnAction.setOnClickListener(v -> {
+                    if (mService != null) {
+                        mService.connectDevice(dev);
+                        Toast.makeText(MainActivity.this, "Connecting " + dev.name + "...", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            card.addView(btnAction);
+        } else {
+            TextView btnAction = new TextView(this);
+            btnAction.setTextSize(11);
+            btnAction.setTypeface(null, Typeface.BOLD);
+            btnAction.setGravity(Gravity.CENTER);
+            btnAction.setPadding(dp8, dp4, dp8, dp4);
+
+            LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            btnLp.topMargin = dp6;
+            btnAction.setLayoutParams(btnLp);
+
+            btnAction.setText(isLocalAudioPlaying ? "Active Audio" : "Play Here");
+            btnAction.setTextColor(isLocalAudioPlaying ? getColor(R.color.success) : getColor(R.color.primary));
+            btnAction.setBackgroundResource(R.drawable.btn_inactive);
+            btnAction.setOnClickListener(v -> routeAudioToThisPhone());
+            card.addView(btnAction);
+        }
+
+        // Tapping card opens full device action dialog
+        card.setClickable(true);
+        card.setFocusable(true);
+        card.setOnClickListener(v -> onDeviceRowClicked(dev));
+        card.setOnLongClickListener(v -> {
+            showRemoveDeviceDialog(dev);
+            return true;
+        });
+
+        return card;
     }
 
     private void routeAudioToThisPhone() {
@@ -1666,6 +2145,7 @@ public class MainActivity extends Activity implements BudsState.Listener {
         View rowDisconnectRemote = view.findViewById(R.id.row_action_disconnect_remote);
         View rowConnectRemote = view.findViewById(R.id.row_action_connect_remote);
         View rowRemoveRemote = view.findViewById(R.id.row_action_remove_remote);
+        Switch swAutoConnect = view.findViewById(R.id.sw_dialog_auto_connect);
 
         Button btnClose = view.findViewById(R.id.btn_dialog_close);
 
@@ -1673,12 +2153,24 @@ public class MainActivity extends Activity implements BudsState.Listener {
         tvName.setText(displayName);
         tvMac.setText(dev.getMacString());
 
-        if (isLocal && isLocalAudioPlaying) {
+        String pendingMac = (mService != null && mService.getState() != null)
+            ? mService.getState().pendingConnectingMac : null;
+        boolean isPending = (pendingMac != null && pendingMac.equalsIgnoreCase(dev.getMacString()) && !dev.isConnected);
+
+        boolean isInCall = (am != null && (am.getMode() == AudioManager.MODE_IN_CALL || am.getMode() == AudioManager.MODE_IN_COMMUNICATION));
+
+        if (isLocal && isInCall) {
+            tvBadge.setText("● In Call");
+            tvBadge.setTextColor(getColor(R.color.success));
+        } else if (isLocal && isLocalAudioPlaying) {
             tvBadge.setText("● Active Audio");
             tvBadge.setTextColor(getColor(R.color.success));
         } else if (isLocal) {
             tvBadge.setText("Connected");
             tvBadge.setTextColor(getColor(R.color.info));
+        } else if (isPending) {
+            tvBadge.setText("Connecting...");
+            tvBadge.setTextColor(getColor(R.color.primary));
         } else if (dev.isConnected) {
             tvBadge.setText("Connected");
             tvBadge.setTextColor(getColor(R.color.info));
@@ -1749,12 +2241,27 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 });
             }
 
-            if (dev.isConnected) {
-                if (rowDisconnectRemote != null) rowDisconnectRemote.setVisibility(View.VISIBLE);
+            if (isPending) {
+                if (rowDisconnectRemote != null) rowDisconnectRemote.setVisibility(View.GONE);
+                if (rowConnectRemote != null) {
+                    rowConnectRemote.setVisibility(View.VISIBLE);
+                    rowConnectRemote.setEnabled(false);
+                    rowConnectRemote.setAlpha(0.5f);
+                }
+            } else if (dev.isConnected) {
+                if (rowDisconnectRemote != null) {
+                    rowDisconnectRemote.setVisibility(View.VISIBLE);
+                    rowDisconnectRemote.setEnabled(true);
+                    rowDisconnectRemote.setAlpha(1.0f);
+                }
                 if (rowConnectRemote != null) rowConnectRemote.setVisibility(View.GONE);
             } else {
                 if (rowDisconnectRemote != null) rowDisconnectRemote.setVisibility(View.GONE);
-                if (rowConnectRemote != null) rowConnectRemote.setVisibility(View.VISIBLE);
+                if (rowConnectRemote != null) {
+                    rowConnectRemote.setVisibility(View.VISIBLE);
+                    rowConnectRemote.setEnabled(true);
+                    rowConnectRemote.setAlpha(1.0f);
+                }
             }
 
             if (rowDisconnectRemote != null) {
@@ -1770,6 +2277,10 @@ public class MainActivity extends Activity implements BudsState.Listener {
             if (rowConnectRemote != null) {
                 rowConnectRemote.setOnClickListener(v -> {
                     dialog.dismiss();
+                    if (isInCall) {
+                        Toast.makeText(this, "Phone call in progress. Earbuds cannot connect other devices during a call.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     if (mService != null) {
                         mService.connectDevice(dev);
                     }
@@ -1781,6 +2292,19 @@ public class MainActivity extends Activity implements BudsState.Listener {
                 rowRemoveRemote.setOnClickListener(v -> {
                     dialog.dismiss();
                     showRemoveDeviceDialog(dev);
+                });
+            }
+
+            if (swAutoConnect != null) {
+                boolean allowed = mService == null || mService.isDeviceAutoConnectAllowed(dev.getMacString());
+                swAutoConnect.setChecked(allowed);
+                swAutoConnect.setOnCheckedChangeListener((btn, isChecked) -> {
+                    if (mService != null) {
+                        mService.setDeviceAutoConnectAllowed(dev.getMacString(), isChecked);
+                        Toast.makeText(this, isChecked
+                            ? "Auto-connect allowed for " + displayName
+                            : "Auto-connect blocked for " + displayName + " (Shield active)", Toast.LENGTH_SHORT).show();
+                    }
                 });
             }
         }

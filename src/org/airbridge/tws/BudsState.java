@@ -82,6 +82,7 @@ public class BudsState {
     public String preferredDeviceMac = null;
     public boolean isPreferredAuto = true;
     public boolean isLocalA2dpPlaying = false;
+    public String pendingConnectingMac = null;
 
     // Gestures configuration [dev (1=L/2=R)][act (2=Double, 3=Triple, 4=Hold)] -> function ID
     public int gestureLeftDouble = 0x01; // Play/Pause
@@ -133,6 +134,7 @@ public class BudsState {
         this.preferredDeviceMac = other.preferredDeviceMac;
         this.isPreferredAuto = other.isPreferredAuto;
         this.isLocalA2dpPlaying = other.isLocalA2dpPlaying;
+        this.pendingConnectingMac = other.pendingConnectingMac;
         this.gestureLeftDouble = other.gestureLeftDouble;
         this.gestureLeftTriple = other.gestureLeftTriple;
         this.gestureLeftHold = other.gestureLeftHold;

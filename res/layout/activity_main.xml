@@ -92,285 +92,233 @@
             </LinearLayout>
 
 
-            <!-- Hero Visual Hardware Dock Card -->
+            <!-- Compact 3-in-1 Hardware Battery Dock -->
             <LinearLayout
+                android:id="@+id/ll_card_battery_compact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:orientation="horizontal"
                 android:background="@drawable/card_bg"
-                android:padding="16dp"
-                android:layout_marginBottom="12dp">
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="6dp"
+                android:gravity="center_vertical"
+                android:weightSum="3"
+                android:layout_marginBottom="6dp">
 
-                <!-- 3-Column Visual Earbuds & Case Dock -->
-
+                <!-- Left Earbud Column -->
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="3"
-                    android:layout_marginBottom="8dp">
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
 
-                    <!-- Left Earbud Graphic & Battery -->
+                    <!-- Icon on top -->
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_earbud_left"
+                        android:contentDescription="Left Earbud" />
+
+                    <!-- Percentage in middle -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingVertical="10dp"
-                        android:layout_marginEnd="3dp"
-                        android:background="@drawable/card_section_bg">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="2dp">
+
+                        <TextView
+                            android:id="@+id/tv_battery_left"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--%"
+                            android:textColor="@color/text_main"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
 
                         <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@drawable/ic_earbud_left"
-                            android:contentDescription="Left Earbud" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Left (L)"
-                            android:textColor="@color/text_dim"
-                            android:textSize="11sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp" />
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginTop="2dp">
-
-                            <TextView
-                                android:id="@+id/tv_battery_left"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="--%"
-                                android:textColor="@color/text_main"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-
-                            <ImageView
-                                android:id="@+id/iv_charge_left"
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="3dp"
-                                android:src="@drawable/ic_charging_bolt"
-                                android:visibility="gone"
-                                android:contentDescription="Charging" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tv_left_wear_status"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="In-Ear"
-                            android:textColor="@color/success"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="2dp"
-                            android:visibility="gone" />
+                            android:id="@+id/iv_charge_left"
+                            android:layout_width="11dp"
+                            android:layout_height="11dp"
+                            android:layout_marginStart="2dp"
+                            android:src="@drawable/ic_charging_bolt"
+                            android:visibility="gone"
+                            android:contentDescription="Charging" />
                     </LinearLayout>
 
-                    <!-- Case Graphic & Battery -->
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <!-- Label below icon -->
+                    <TextView
+                        android:id="@+id/tv_left_wear_status"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingVertical="10dp"
-                        android:layout_marginHorizontal="2dp"
-                        android:background="@drawable/card_section_bg">
-
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@drawable/ic_case"
-                            android:contentDescription="Charging Case" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Case"
-                            android:textColor="@color/text_dim"
-                            android:textSize="11sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp" />
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginTop="2dp">
-
-                            <TextView
-                                android:id="@+id/tv_battery_case"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="--%"
-                                android:textColor="@color/text_main"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-
-                            <ImageView
-                                android:id="@+id/iv_charge_case"
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="3dp"
-                                android:src="@drawable/ic_charging_bolt"
-                                android:visibility="gone"
-                                android:contentDescription="Charging" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tv_case_wear_status"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Case"
-                            android:textColor="@color/text_dim"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="2dp"
-                            android:visibility="gone" />
-                    </LinearLayout>
-
-                    <!-- Right Earbud Graphic & Battery -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingVertical="10dp"
-                        android:layout_marginStart="3dp"
-                        android:background="@drawable/card_section_bg">
-
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@drawable/ic_earbud_right"
-                            android:contentDescription="Right Earbud" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Right (R)"
-                            android:textColor="@color/text_dim"
-                            android:textSize="11sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="4dp" />
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginTop="2dp">
-
-                            <TextView
-                                android:id="@+id/tv_battery_right"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="--%"
-                                android:textColor="@color/text_main"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-
-                            <ImageView
-                                android:id="@+id/iv_charge_right"
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="3dp"
-                                android:src="@drawable/ic_charging_bolt"
-                                android:visibility="gone"
-                                android:contentDescription="Charging" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tv_right_wear_status"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="In-Ear"
-                            android:textColor="@color/success"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:layout_marginTop="2dp"
-                            android:visibility="gone" />
-                    </LinearLayout>
+                        android:text="Left"
+                        android:textColor="@color/text_dim"
+                        android:textSize="10sp"
+                        android:singleLine="true"
+                        android:ellipsize="end" />
                 </LinearLayout>
 
-                <!-- Battery Health & Pogo Pin Contact Banner -->
+                <!-- Divider -->
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="32dp"
+                    android:background="@color/card_border" />
+
+                <!-- Case Column -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <!-- Icon on top -->
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_case"
+                        android:contentDescription="Case" />
+
+                    <!-- Percentage in middle -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="2dp">
+
+                        <TextView
+                            android:id="@+id/tv_battery_case"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--%"
+                            android:textColor="@color/text_main"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:id="@+id/iv_charge_case"
+                            android:layout_width="11dp"
+                            android:layout_height="11dp"
+                            android:layout_marginStart="2dp"
+                            android:src="@drawable/ic_charging_bolt"
+                            android:visibility="gone"
+                            android:contentDescription="Charging" />
+                    </LinearLayout>
+
+                    <!-- Label below icon -->
+                    <TextView
+                        android:id="@+id/tv_case_wear_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Case"
+                        android:textColor="@color/text_dim"
+                        android:textSize="10sp"
+                        android:singleLine="true"
+                        android:ellipsize="end" />
+                </LinearLayout>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="32dp"
+                    android:background="@color/card_border" />
+
+                <!-- Right Earbud Column -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <!-- Icon on top -->
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_earbud_right"
+                        android:contentDescription="Right Earbud" />
+
+                    <!-- Percentage in middle -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="2dp">
+
+                        <TextView
+                            android:id="@+id/tv_battery_right"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--%"
+                            android:textColor="@color/text_main"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <ImageView
+                            android:id="@+id/iv_charge_right"
+                            android:layout_width="11dp"
+                            android:layout_height="11dp"
+                            android:layout_marginStart="2dp"
+                            android:src="@drawable/ic_charging_bolt"
+                            android:visibility="gone"
+                            android:contentDescription="Charging" />
+                    </LinearLayout>
+
+                    <!-- Label below icon -->
+                    <TextView
+                        android:id="@+id/tv_right_wear_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Right"
+                        android:textColor="@color/text_dim"
+                        android:textSize="10sp"
+                        android:singleLine="true"
+                        android:ellipsize="end" />
+                </LinearLayout>
+
                 <LinearLayout
                     android:id="@+id/ll_battery_health_banner"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/card_section_bg"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="8dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
                     android:visibility="gone">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/ic_warning" />
-
                     <TextView
                         android:id="@+id/tv_battery_health_status"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:textColor="@color/warning"
-                        android:textSize="11sp"
-                        android:layout_marginStart="8dp"
-                        android:text="Battery Health Notice" />
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
                 </LinearLayout>
-
             </LinearLayout>
 
-
-            <!-- Official realme Link 3-Circle Noise Control Card -->
+            <!-- 3-State Noise Control Card on Home -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/card_bg"
-                android:padding="16dp"
-                android:layout_marginBottom="12dp">
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="12dp"
+                android:layout_marginBottom="6dp">
 
-                <!-- Header Row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Noise control"
-                        android:textColor="@color/text_main"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
+                    android:text="NOISE CONTROL"
+                    android:textColor="@color/primary"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.08"
+                    android:layout_marginBottom="6dp" />
 
                 <!-- 3 Circular ANC Buttons Row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center"
-                    android:layout_marginBottom="14dp">
+                    android:gravity="center">
 
-                    <!-- Circle 1: Noise cancellation -->
+                    <!-- Button 1: Noise cancellation -->
                     <LinearLayout
                         android:id="@+id/ll_anc_btn_cancel"
                         android:layout_width="0dp"
@@ -383,14 +331,14 @@
 
                         <FrameLayout
                             android:id="@+id/fl_anc_circle_on"
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
                             android:background="@drawable/bg_circle_anc_active">
 
                             <ImageView
                                 android:id="@+id/iv_anc_icon_on"
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:layout_gravity="center"
                                 android:src="@drawable/ic_anc_circle_noise" />
                         </FrameLayout>
@@ -401,13 +349,13 @@
                             android:layout_height="wrap_content"
                             android:text="Noise cancellation"
                             android:textColor="@color/text_main"
-                            android:textSize="11sp"
+                            android:textSize="10sp"
                             android:textStyle="bold"
                             android:gravity="center"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="4dp" />
                     </LinearLayout>
 
-                    <!-- Circle 2: Off -->
+                    <!-- Button 2: Off -->
                     <LinearLayout
                         android:id="@+id/ll_anc_btn_off"
                         android:layout_width="0dp"
@@ -420,14 +368,14 @@
 
                         <FrameLayout
                             android:id="@+id/fl_anc_circle_off"
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
                             android:background="@drawable/bg_circle_anc_inactive">
 
                             <ImageView
                                 android:id="@+id/iv_anc_icon_off"
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:layout_gravity="center"
                                 android:src="@drawable/ic_anc_circle_off" />
                         </FrameLayout>
@@ -438,12 +386,13 @@
                             android:layout_height="wrap_content"
                             android:text="Off"
                             android:textColor="@color/text_dim"
-                            android:textSize="11sp"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
                             android:gravity="center"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="4dp" />
                     </LinearLayout>
 
-                    <!-- Circle 3: Transparency -->
+                    <!-- Button 3: Transparency -->
                     <LinearLayout
                         android:id="@+id/ll_anc_btn_trans"
                         android:layout_width="0dp"
@@ -456,14 +405,14 @@
 
                         <FrameLayout
                             android:id="@+id/fl_anc_circle_trans"
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
                             android:background="@drawable/bg_circle_anc_inactive">
 
                             <ImageView
                                 android:id="@+id/iv_anc_icon_trans"
-                                android:layout_width="26dp"
-                                android:layout_height="26dp"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:layout_gravity="center"
                                 android:src="@drawable/ic_anc_circle_trans" />
                         </FrameLayout>
@@ -474,11 +423,423 @@
                             android:layout_height="wrap_content"
                             android:text="Transparency"
                             android:textColor="@color/text_dim"
-                            android:textSize="11sp"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
                             android:gravity="center"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="4dp" />
                     </LinearLayout>
                 </LinearLayout>
+            </LinearLayout>
+
+            <!-- ============================================================ -->
+            <!-- QUICK ACCESS CARD (DEVICES & FREQUENT TOOLS)                 -->
+            <!-- ============================================================ -->
+            <LinearLayout
+                android:id="@+id/ll_card_quick_access"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_bg"
+                android:padding="12dp"
+                android:layout_marginBottom="6dp">
+
+                <!-- Header Row: Title & Manage Devices -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="QUICK DEVICES"
+                        android:textColor="@color/text_dim"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_quick_manage_devices"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Manage all →"
+                        android:textColor="@color/primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:padding="2dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+                </LinearLayout>
+
+                <!-- 2-Column Vertical Quick Device Grid -->
+                <LinearLayout
+                    android:id="@+id/ll_quick_devices_chips"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/card_border"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Quick Ride / Helmet Mode Toggle Row -->
+                <LinearLayout
+                    android:id="@+id/btn_quick_ride_mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/card_section_bg"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <ImageView
+                        android:id="@+id/iv_quick_ride_icon"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:src="@drawable/ic_helmet"
+                        android:contentDescription="Ride Mode" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="12dp">
+
+                        <TextView
+                            android:id="@+id/tv_quick_ride_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Ride / Helmet Mode"
+                            android:textColor="@color/text_main"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_quick_ride_subtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Locks touch &amp; in-ear sensors to prevent accidental taps"
+                            android:textColor="@color/text_dim"
+                            android:textSize="11sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <Switch
+                        android:id="@+id/sw_quick_ride_mode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:track="@drawable/switch_track"
+                        android:thumb="@drawable/switch_thumb"
+                        android:splitTrack="false"
+                        android:clickable="false"
+                        android:focusable="false" />
+                </LinearLayout>
+            </LinearLayout>
+
+
+            <!-- 2x2 Quick Navigation Grid -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SETTINGS &amp; CONTROLS"
+                android:textColor="@color/primary"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Row 1: Sound & EQ | All Devices -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:layout_marginBottom="6dp">
+
+                <!-- Form Card 1: Sound effects -->
+                <LinearLayout
+                    android:id="@+id/card_nav_sound"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/card_clickable_bg"
+                    android:paddingVertical="10dp"
+                    android:paddingHorizontal="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginEnd="3dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_nav_sound"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="Sound effects" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Sound &amp; EQ"
+                        android:textColor="@color/text_main"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:singleLine="true" />
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_chevron_right"
+                        android:contentDescription="Open" />
+                </LinearLayout>
+
+                <!-- Form Card 2: All Devices -->
+                <LinearLayout
+                    android:id="@+id/card_nav_devices"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/card_clickable_bg"
+                    android:paddingVertical="10dp"
+                    android:paddingHorizontal="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginStart="3dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_nav_devices"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="Devices" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="All Devices"
+                        android:textColor="@color/text_main"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:singleLine="true" />
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_chevron_right"
+                        android:contentDescription="Open" />
+
+                    <TextView
+                        android:id="@+id/tv_device_nav_subtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Row 2: Gestures | More Settings -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:layout_marginBottom="8dp">
+
+                <!-- Form Card 3: Gestures -->
+                <LinearLayout
+                    android:id="@+id/card_nav_gestures"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/card_clickable_bg"
+                    android:paddingVertical="10dp"
+                    android:paddingHorizontal="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginEnd="3dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_nav_gestures"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="Gestures" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Gestures"
+                        android:textColor="@color/text_main"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:singleLine="true" />
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_chevron_right"
+                        android:contentDescription="Open" />
+                </LinearLayout>
+
+                <!-- Form Card 4: More Settings & Utilities -->
+                <LinearLayout
+                    android:id="@+id/card_nav_settings"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/card_clickable_bg"
+                    android:paddingVertical="10dp"
+                    android:paddingHorizontal="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginStart="3dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_nav_settings"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="Settings" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="More Settings"
+                        android:textColor="@color/text_main"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:singleLine="true" />
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_chevron_right"
+                        android:contentDescription="Open" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+
+        
+        <!-- ============================================================ -->
+        <!-- FORM 5: MORE SETTINGS & UTILITIES                            -->
+        <!-- ============================================================ -->
+        <LinearLayout
+            android:id="@+id/ll_form_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Sub-Form Toolbar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="10dp"
+                android:layout_marginBottom="4dp">
+
+                <ImageView
+                    android:id="@+id/btn_back_settings"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@drawable/ic_arrow_back"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:padding="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Back" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Settings &amp; Utilities"
+                    android:textColor="@color/text_main"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:paddingStart="12dp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/card_border"
+                android:layout_marginBottom="12dp" />
+
+<!-- Official realme Link 3-Circle Noise Control Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_bg"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp">
+
+                <!-- Header Row (Clickable to Collapse/Expand) -->
+                <LinearLayout
+                    android:id="@+id/ll_header_noise_control"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="4dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Noise control"
+                        android:textColor="@color/text_main"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_header_noise_summary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ANC On"
+                        android:textColor="@color/primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="8dp" />
+
+                    <ImageView
+                        android:id="@+id/iv_chevron_noise_control"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_down" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ll_body_noise_control"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="14dp">
+
+
 
                 <!-- ── Dynamic sub-options: Noise Cancellation ── -->
                 <LinearLayout
@@ -622,396 +983,327 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Helmet / Ride Mode Quick Toggle Card -->
+            <!-- Smart Features & Sensing Card (Collapsible) -->
             <LinearLayout
+                android:id="@+id/ll_card_smart_features"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:orientation="vertical"
                 android:background="@drawable/card_bg"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp"
+                android:padding="16dp"
                 android:layout_marginBottom="12dp">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_helmet"
-                    android:layout_marginEnd="12dp"
-                    android:contentDescription="Helmet Mode" />
-
+                <!-- Header Row (Clickable to Collapse/Expand) -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/ll_header_smart_features"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="4dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Helmet / Ride Mode"
+                        android:layout_weight="1"
+                        android:text="Smart features"
                         android:textColor="@color/text_main"
-                        android:textSize="15sp"
+                        android:textSize="16sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tv_header_smart_summary"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Locks touch sensors &amp; in-ear detection to prevent ANC toggling in helmet"
+                        android:text="5 toggles"
                         android:textColor="@color/text_dim"
-                        android:textSize="11sp"
-                        android:layout_marginTop="2dp" />
+                        android:textSize="12sp"
+                        android:layout_marginEnd="8dp" />
+
+                    <ImageView
+                        android:id="@+id/iv_chevron_smart_features"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_chevron_down" />
                 </LinearLayout>
 
-                <Switch
-                    android:track="@drawable/switch_track"
-                    android:thumb="@drawable/switch_thumb"
-                    android:splitTrack="false"
-                    android:id="@+id/sw_helmet_mode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp" />
-            </LinearLayout>
-
-            <!-- Smart Sensing Quick Toggle Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_bg"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp"
-                android:layout_marginBottom="12dp">
-
+                <!-- Body (Collapsible) -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/ll_body_smart_features"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginTop="10dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <!-- 1. Helmet / Ride Mode -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Smart Sensing"
-                        android:textColor="@color/text_main"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingVertical="10dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Auto play/pause when earbuds are removed"
-                        android:textColor="@color/text_dim"
-                        android:textSize="11sp"
-                        android:layout_marginTop="2dp" />
-                </LinearLayout>
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_helmet"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Helmet Mode" />
 
-                <Switch
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Helmet / Ride Mode"
+                                android:textColor="@color/text_main"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Locks touch sensors to prevent accidental taps in helmet"
+                                android:textColor="@color/text_dim"
+                                android:textSize="11sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <Switch
                             android:track="@drawable/switch_track"
                             android:thumb="@drawable/switch_thumb"
                             android:splitTrack="false"
-                    android:id="@+id/sw_in_ear"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp" />
-            </LinearLayout>
+                            android:id="@+id/sw_helmet_mode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
 
-            <!-- Smart Wear Auto-Transparency Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_bg"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp"
-                android:layout_marginBottom="12dp">
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/card_border" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <!-- 2. Smart Sensing (In-Ear Detection) -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Auto-Transparency on 1 Earbud"
-                        android:textColor="@color/text_main"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingVertical="10dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Switch remaining earbud to Transparency when 1 earbud is removed"
-                        android:textColor="@color/text_dim"
-                        android:textSize="11sp"
-                        android:layout_marginTop="2dp" />
-                </LinearLayout>
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_earbud_left"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Smart Sensing" />
 
-                <Switch
-                    android:id="@+id/sw_smart_wear_trans"
-                    android:track="@drawable/switch_track"
-                    android:thumb="@drawable/switch_thumb"
-                    android:splitTrack="false"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp" />
-            </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-            <!-- Game Mode Quick Toggle Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_bg"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp"
-                android:layout_marginBottom="12dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="In-Ear Auto-Pause"
+                                android:textColor="@color/text_main"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto play/pause audio when earbuds are removed"
+                                android:textColor="@color/text_dim"
+                                android:textSize="11sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Game Mode"
-                        android:textColor="@color/text_main"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Low latency ~45ms for gaming"
-                        android:textColor="@color/text_dim"
-                        android:textSize="11sp"
-                        android:layout_marginTop="2dp" />
-                </LinearLayout>
-
-                <Switch
+                        <Switch
                             android:track="@drawable/switch_track"
                             android:thumb="@drawable/switch_thumb"
                             android:splitTrack="false"
-                    android:id="@+id/sw_game_mode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp" />
-            </LinearLayout>
+                            android:id="@+id/sw_in_ear"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
 
-            <!-- Auto-Answer Calls Quick Toggle Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_bg"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp"
-                android:layout_marginBottom="12dp">
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/card_border" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <!-- 3. Smart Wear Auto-Transparency -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Auto-Answer Calls"
-                        android:textColor="@color/text_main"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingVertical="10dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Wear earbud to auto-pick up incoming calls"
-                        android:textColor="@color/text_dim"
-                        android:textSize="11sp"
-                        android:layout_marginTop="2dp" />
-                </LinearLayout>
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_anc_circle_trans"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Auto-Transparency" />
 
-                <Switch
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto-Transparency on 1 Earbud"
+                                android:textColor="@color/text_main"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Switch remaining earbud to Transparency when 1 is removed"
+                                android:textColor="@color/text_dim"
+                                android:textSize="11sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <Switch
+                            android:id="@+id/sw_smart_wear_trans"
                             android:track="@drawable/switch_track"
                             android:thumb="@drawable/switch_thumb"
                             android:splitTrack="false"
-                    android:id="@+id/sw_auto_answer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp" />
-            </LinearLayout>
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
 
-            <!-- Menu Cards section header -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="SETTINGS &amp; CONTROLS"
-                android:textColor="@color/primary"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.08"
-                android:layout_marginBottom="8dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/card_border" />
 
-            <!-- Form Card 1: Sound effects -->
-            <LinearLayout
-                android:id="@+id/card_nav_sound"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_clickable_bg"
-                android:padding="14dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginBottom="8dp">
-
-                <ImageView
-                    android:layout_width="26dp"
-                    android:layout_height="26dp"
-                    android:src="@drawable/ic_nav_sound"
-                    android:layout_marginEnd="14dp"
-                    android:contentDescription="Sound effects" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <!-- 4. Game Mode -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Sound effects"
-                        android:textColor="@color/text_main"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingVertical="10dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_game_mode"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Game Mode" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Game Mode"
+                                android:textColor="@color/text_main"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Low latency ~45ms for gaming &amp; videos"
+                                android:textColor="@color/text_dim"
+                                android:textSize="11sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <Switch
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
+                            android:id="@+id/sw_game_mode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/card_border" />
+
+                    <!-- 5. Auto-Answer Calls -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Presets, Spatial Audio, Dynamic Bass, Hi-Res"
-                        android:textColor="@color/text_dim"
-                        android:textSize="11sp" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingVertical="10dp">
 
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_device_phone"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="Auto Answer" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Auto-Answer Calls"
+                                android:textColor="@color/text_main"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Wear earbud to automatically pick up incoming calls"
+                                android:textColor="@color/text_dim"
+                                android:textSize="11sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <Switch
+                            android:track="@drawable/switch_track"
+                            android:thumb="@drawable/switch_thumb"
+                            android:splitTrack="false"
+                            android:id="@+id/sw_auto_answer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
                 </LinearLayout>
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="Open" />
             </LinearLayout>
 
-            <!-- Form Card 2: Device Connection & Multipoint -->
-            <LinearLayout
-                android:id="@+id/card_nav_devices"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_clickable_bg"
-                android:padding="14dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginBottom="8dp">
-
-                <ImageView
-                    android:layout_width="26dp"
-                    android:layout_height="26dp"
-                    android:src="@drawable/ic_nav_devices"
-                    android:layout_marginEnd="14dp"
-                    android:contentDescription="Devices" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Device Connection &amp; Multipoint"
-                        android:textColor="@color/text_main"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_device_nav_subtitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Triple-device connection, auto switching"
-                        android:textColor="@color/text_dim"
-                        android:textSize="11sp" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="Open" />
-            </LinearLayout>
-
-            <!-- Form Card 3: Earbud Touch Controls -->
-            <LinearLayout
-                android:id="@+id/card_nav_gestures"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="@drawable/card_clickable_bg"
-                android:padding="14dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginBottom="8dp">
-
-                <ImageView
-                    android:layout_width="26dp"
-                    android:layout_height="26dp"
-                    android:src="@drawable/ic_nav_gestures"
-                    android:layout_marginEnd="14dp"
-                    android:contentDescription="Gestures" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Personalisation &amp; Controls"
-                        android:textColor="@color/text_main"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Gestures, Touch &amp; hold, Auto play/pause"
-                        android:textColor="@color/text_dim"
-                        android:textSize="11sp" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="Open" />
-            </LinearLayout>
-
-            <!-- Notification Settings Card -->
+            
+<!-- Notification Settings Card -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -1628,11 +1920,9 @@
                         android:paddingVertical="4dp" />
                 </LinearLayout>
             </LinearLayout>
-
         </LinearLayout>
 
-
-        <!-- ============================================================ -->
+<!-- ============================================================ -->
         <!-- FORM 2: SOUND EFFECTS (MATCHING REALME OFFICIAL DESIGN)      -->
         <!-- ============================================================ -->
         <LinearLayout
